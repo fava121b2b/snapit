@@ -588,7 +588,7 @@
     </div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.8</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.9</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -869,7 +869,7 @@ function updateCameraUI(idx) {
   const descTag = document.getElementById('desc-tag');
   descTag.textContent = shot.mandatory ? '● REQUIRED' : '○ OPTIONAL';
   descTag.className = shot.mandatory ? 'cam-mandatory-tag' : 'cam-optional-tag';
-  document.getElementById('hud-name-bottom').textContent = shot.name;
+  // shot name shown in top HUD only
 
   // Overlay image
   const overlay = document.getElementById('overlay-img');
