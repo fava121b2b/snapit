@@ -618,7 +618,7 @@
     <div class="token-hint" id="token-hint"></div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.2</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.3</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -1003,7 +1003,12 @@ async function uploadToCloudinary(blob, filename) {
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
     { method: 'POST', body: formData }
   );
-  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+    throw new Error(errMsg);
+  }
   return await res.json();
 }
 
@@ -1041,16 +1046,40 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
   try {
     await uploadToCloudinary(blobToUpload, filename);
     console.log('Uploaded:', filename);
-    // Retry anything that was queued from earlier
+    showToast('✓ Uploaded: ' + filename, 'success');
     if (uploadQueue.length > 0) retryQueue();
   } catch(e) {
-    console.warn('Upload failed, queuing for retry:', filename, e);
+    console.warn('Upload failed:', filename, e.message);
     uploadQueue.push({ blob: blobToUpload, filename });
+    showToast('⚠ Upload failed: ' + e.message, 'error');
   }
 
   saveBtn.textContent = 'Save & Next →';
   saveBtn.disabled = false;
 });
+
+// ── Toast notification ──
+function showToast(msg, type = 'success') {
+  let toast = document.getElementById('upload-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'upload-toast';
+    toast.style.cssText = `
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      padding: 10px 20px; border-radius: 100px; font-size: 13px;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      z-index: 99999; transition: opacity 0.4s;
+      white-space: nowrap; max-width: 90vw; text-align: center;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#ff4757' : '#47ff8a';
+  toast.style.color = type === 'error' ? '#fff' : '#0a0a0a';
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+}
 
 // ── Skip ──
 document.getElementById('btn-skip').addEventListener('click', () => {
