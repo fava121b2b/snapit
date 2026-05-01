@@ -115,6 +115,33 @@
   }
   .btn-start:active { transform: scale(0.96); opacity: 0.9; }
 
+  /* Token input */
+  .token-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; margin-bottom: 24px; width: 100%; max-width: 340px;
+  }
+  .token-label {
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 1px; text-transform: uppercase;
+    align-self: flex-start;
+  }
+  .token-input {
+    width: 100%; padding: 14px 16px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--white);
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .token-input:focus { border-color: var(--accent); }
+  .token-input.saved { border-color: #47ff8a; }
+  .token-hint {
+    font-size: 11px; color: #47ff8a;
+    align-self: flex-start; min-height: 16px;
+  }
+
   /* ══════════════════════════════
      POSITION TRANSITION SCREEN
   ══════════════════════════════ */
@@ -237,42 +264,32 @@
     transition: width 0.4s ease;
   }
 
-  /* Required/optional badge — top left */
-  .cam-mandatory-tag {
+  /* Required/optional badge — below HUD, clear of Dynamic Island */
+  .cam-mandatory-tag, .cam-optional-tag {
     position: absolute;
-    top: calc(var(--safe-top) + 44px);
-    left: 70px;
+    top: calc(var(--safe-top) + 48px);
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: var(--accent);
     z-index: 11;
     background: rgba(0,0,0,0.45);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    padding: 4px 10px; border-radius: 100px;
+    padding: 4px 12px; border-radius: 100px;
+    white-space: nowrap;
   }
-  .cam-optional-tag {
-    position: absolute;
-    top: calc(var(--safe-top) + 44px);
-    left: 70px;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted);
-    z-index: 11;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    padding: 4px 10px; border-radius: 100px;
-  }
+  .cam-mandatory-tag { color: var(--accent); }
+  .cam-optional-tag { color: var(--muted); }
   .cam-desc-text { display: none; }
   .cam-shot-title { display: none; }
   .cam-description { display: none; }
 
   /* Bottom controls */
-  /* Shutter + nav all on RIGHT edge */
+  /* Shutter + nav on RIGHT edge, clear of Dynamic Island */
   .cam-shutter-wrap {
     position: absolute;
-    right: 16px;
+    right: max(20px, env(safe-area-inset-right, 20px));
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
@@ -323,23 +340,29 @@
   .cam-shutter.capturing { background: var(--accent); }
   .cam-shutter.capturing::after { background: var(--accent); }
 
-  /* Overlay opacity slider — LEFT side, vertical */
+  /* Overlay opacity slider — LEFT side, vertical, clear of Dynamic Island */
   .cam-overlay-ctrl {
     position: absolute;
-    left: 16px; top: 50%;
+    left: max(20px, env(safe-area-inset-left, 20px));
+    top: 50%;
     transform: translateY(-50%);
     display: flex; flex-direction: column; align-items: center; gap: 8px;
     z-index: 10;
+    padding: 10px 6px;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 100px;
   }
   .cam-overlay-ctrl input[type=range] {
     -webkit-appearance: slider-vertical;
     appearance: slider-vertical;
     writing-mode: vertical-lr;
     direction: rtl;
-    width: 28px; height: 110px;
+    width: 28px; height: 100px;
     cursor: pointer;
     accent-color: var(--accent);
-    opacity: 0.75;
+    opacity: 0.85;
   }
   .cam-overlay-label {
     font-size: 9px; color: var(--muted);
@@ -587,8 +610,13 @@
       <div class="home-stat-label">Optional</div>
     </div>
   </div>
+  <div class="token-wrap" id="token-wrap">
+    <div class="token-label">Dropbox Access Token</div>
+    <input class="token-input" id="dropbox-token" type="password" placeholder="Paste your token here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="token-hint" id="token-hint"></div>
+  </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.9</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.1</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -651,7 +679,7 @@
     <div class="retake-hint">Happy with this shot?</div>
     <div class="retake-buttons">
       <button class="btn-retake" id="btn-retake">↩ Retake</button>
-      <button class="btn-save" id="btn-save-next">Save to Photos →</button>
+      <button class="btn-save" id="btn-save-next">Save & Next →</button>
     </div>
   </div>
 </div>
@@ -724,14 +752,7 @@ function checkOrientation() {
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', checkOrientation);
 
-// ── Start shoot ──
-document.getElementById('btn-start').addEventListener('click', () => {
-  currentIdx = 0;
-  capturedCount = 0;
-  skippedCount = 0;
-  previousPosition = null;
-  checkPositionTransition(0, true);
-});
+// ── Start shoot — handled in token management section above ──
 
 // ── Position transition logic ──
 function checkPositionTransition(idx, force = false) {
@@ -961,40 +982,70 @@ document.getElementById('btn-retake').addEventListener('click', () => {
   checkOrientation();
 });
 
-// ── Save & Next — Web Share API (saves directly to Photos on iOS) ──
+// ── Dropbox upload ──
+let uploadQueue = [];
+
+async function uploadToDropbox(blob, filename) {
+  const token = localStorage.getItem('dropbox_token');
+  if (!token) throw new Error('No Dropbox token');
+  const date = new Date().toISOString().slice(0, 10);
+  const path = `/SnapIt/${date}/${filename}`;
+  const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: false })
+    },
+    body: blob
+  });
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+  return await res.json();
+}
+
+async function retryQueue() {
+  while (uploadQueue.length > 0) {
+    const item = uploadQueue[0];
+    try {
+      await uploadToDropbox(item.blob, item.filename);
+      uploadQueue.shift();
+      console.log('Queued upload succeeded:', item.filename);
+    } catch(e) {
+      console.warn('Retry failed, will try again later');
+      break;
+    }
+  }
+}
+
+// ── Save & Next — uploads to Dropbox silently ──
 document.getElementById('btn-save-next').addEventListener('click', async () => {
   if (!capturedBlob) return;
   const shot = SHOTS[currentIdx];
   const filename = `${String(shot.id).padStart(2,'0')}_${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
-  const file = new File([capturedBlob], filename, { type: 'image/jpeg' });
 
-  // Try Web Share API first — shows native iOS share sheet with Save Image at top
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: shot.name });
-      // User completed share (tapped Save Image)
-      capturedCount++;
-      capturedBlob = null;
-      goToNextShot();
-      return;
-    } catch(e) {
-      if (e.name === 'AbortError') {
-        // User cancelled share sheet — stay on review screen so they can retry
-        return;
-      }
-    }
-  }
+  const saveBtn = document.getElementById('btn-save-next');
+  saveBtn.textContent = 'Uploading…';
+  saveBtn.disabled = true;
 
-  // Fallback: standard download if Web Share not supported
-  const url = URL.createObjectURL(capturedBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  // Move to next shot immediately — upload happens in background
+  const blobToUpload = capturedBlob;
   capturedCount++;
   capturedBlob = null;
   goToNextShot();
+
+  // Upload in background
+  try {
+    await uploadToDropbox(blobToUpload, filename);
+    console.log('Uploaded:', filename);
+    // Retry anything that was queued from earlier
+    if (uploadQueue.length > 0) retryQueue();
+  } catch(e) {
+    console.warn('Upload failed, queuing for retry:', filename, e);
+    uploadQueue.push({ blob: blobToUpload, filename });
+  }
+
+  saveBtn.textContent = 'Save & Next →';
+  saveBtn.disabled = false;
 });
 
 // ── Skip ──
@@ -1055,8 +1106,51 @@ document.getElementById('btn-new-shoot').addEventListener('click', () => {
   showScreen('home');
 });
 
+// ── Token management ──
+function loadToken() {
+  const saved = localStorage.getItem('dropbox_token');
+  const input = document.getElementById('dropbox-token');
+  const hint = document.getElementById('token-hint');
+  if (saved) {
+    input.value = saved;
+    input.classList.add('saved');
+    hint.textContent = '✓ Token saved';
+  }
+}
+
+document.getElementById('dropbox-token').addEventListener('input', function() {
+  const val = this.value.trim();
+  const hint = document.getElementById('token-hint');
+  if (val.length > 20) {
+    localStorage.setItem('dropbox_token', val);
+    this.classList.add('saved');
+    hint.textContent = '✓ Token saved';
+  } else {
+    this.classList.remove('saved');
+    hint.textContent = '';
+  }
+});
+
+// Override start button to check token first
+document.getElementById('btn-start').addEventListener('click', () => {
+  const token = localStorage.getItem('dropbox_token');
+  if (!token) {
+    const hint = document.getElementById('token-hint');
+    hint.style.color = '#ff4757';
+    hint.textContent = '⚠ Please enter your Dropbox token first';
+    document.getElementById('dropbox-token').focus();
+    return;
+  }
+  currentIdx = 0;
+  capturedCount = 0;
+  skippedCount = 0;
+  previousPosition = null;
+  checkPositionTransition(0, true);
+}, true); // capture phase so it fires before the old listener
+
 // ── Init ──
 loadShots();
+loadToken();
 
 // ── Hide Safari address bar ──
 // Scroll down slightly to push browser chrome away
