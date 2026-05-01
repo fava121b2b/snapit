@@ -342,7 +342,11 @@
     background: #000;
   }
   #preview-img {
-    width: 100%; height: 100%;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(100vw, calc(100vh * 4 / 3));
+    height: min(100vh, calc(100vw * 3 / 4));
     object-fit: cover;
   }
   .retake-hud {
@@ -514,7 +518,7 @@
     </div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.4</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.5</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -531,7 +535,7 @@
   <video id="camera-video" autoplay playsinline muted webkit-playsinline x-webkit-airplay="deny"></video>
   <img id="overlay-img" src="" alt="">
 
-  <div class="cam-hud-top">
+  <div class="cam-hud-top" id="cam-hud-top">
     <div class="cam-shot-counter"><span id="hud-current">1</span>/<span id="hud-total">58</span></div>
     <div class="cam-shot-name" id="hud-name">Shot Name</div>
     <div class="cam-badge-pos" id="hud-pos">A</div>
@@ -549,7 +553,10 @@
 
   <div class="cam-controls">
     <button class="cam-btn-side" id="btn-back-shot" title="Previous">←</button>
-    <button class="cam-shutter" id="btn-shutter"></button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <button class="cam-btn-side" id="btn-switch-cam" title="Switch Camera" style="width:42px;height:42px;font-size:18px;">⇄</button>
+      <button class="cam-shutter" id="btn-shutter"></button>
+    </div>
     <button class="cam-btn-side skip" id="btn-skip" title="Skip">SKIP</button>
   </div>
 
@@ -561,7 +568,7 @@
 </div>
 
 <!-- ── SCREEN: RETAKE PREVIEW ── -->
-<div class="screen" id="screen-retake" style="position:relative;">
+<div class="screen" id="screen-retake" style="position:relative;background:#000;">
   <img id="preview-img" src="" alt="Captured photo">
   <div class="retake-hud">
     <div class="retake-shot-name" id="retake-name">Shot Name</div>
@@ -603,6 +610,8 @@ let capturedCount = 0;
 let skippedCount = 0;
 let stream = null;
 let previousPosition = null;
+let availableCameras = [];
+let currentCameraIdx = 0;
 
 // ── Load shot list ──
 async function loadShots() {
@@ -686,29 +695,73 @@ function showPositionScreen(pos, nextIdx) {
 }
 
 // ── Camera ──
-async function startCamera() {
-  if (stream) return; // already running
+async function getAvailableCameras() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 4032 },
-        height: { ideal: 3024 },
-        aspectRatio: { ideal: 4/3 }
-      },
-      audio: false
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    availableCameras = devices.filter(d => d.kind === 'videoinput');
+    // Put rear cameras first
+    availableCameras.sort((a, b) => {
+      const aRear = a.label.toLowerCase().includes('back') || a.label.toLowerCase().includes('rear');
+      const bRear = b.label.toLowerCase().includes('back') || b.label.toLowerCase().includes('rear');
+      return bRear - aRear;
     });
+  } catch(e) {
+    console.warn('Could not enumerate cameras', e);
+  }
+}
+
+async function startCamera(deviceId = null) {
+  // Stop existing stream first
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  try {
+    const constraints = {
+      video: deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 }, aspectRatio: { ideal: 4/3 } }
+        : { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 }, aspectRatio: { ideal: 4/3 } },
+      audio: false
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
     const video = document.getElementById('camera-video');
     video.srcObject = stream;
     video.setAttribute('playsinline', '');
     video.setAttribute('autoplay', '');
     video.muted = true;
     await video.play().catch(e => console.warn('play() failed:', e));
+    // Enumerate cameras after first permission grant
+    if (availableCameras.length === 0) await getAvailableCameras();
   } catch(e) {
     document.getElementById('cam-error').classList.add('visible');
     console.error('Camera error', e);
   }
 }
+
+// ── Switch camera ──
+document.getElementById('btn-switch-cam').addEventListener('click', async () => {
+  if (availableCameras.length <= 1) {
+    // Try facingMode toggle as fallback
+    const currentFacing = stream?.getVideoTracks()[0]?.getSettings()?.facingMode;
+    const nextFacing = currentFacing === 'environment' ? 'user' : 'environment';
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: nextFacing }, width: { ideal: 4032 }, height: { ideal: 3024 } },
+        audio: false
+      });
+      const video = document.getElementById('camera-video');
+      video.srcObject = stream;
+      await video.play().catch(e => {});
+    } catch(e) {
+      // exact facingMode failed, try ideal
+      await startCamera();
+    }
+    return;
+  }
+  currentCameraIdx = (currentCameraIdx + 1) % availableCameras.length;
+  await startCamera(availableCameras[currentCameraIdx].deviceId);
+});
 
 function startCameraForShot(idx) {
   currentIdx = idx;
@@ -886,11 +939,6 @@ function finishShoot() {
     `${capturedCount} photo${capturedCount !== 1 ? 's' : ''} saved to your device.<br>` +
     (skippedCount > 0 ? `${skippedCount} optional shot${skippedCount !== 1 ? 's' : ''} skipped.` : 'All shots captured!');
 
-  // Stop camera
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-  }
   showScreen('complete');
 }
 
