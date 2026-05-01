@@ -237,41 +237,61 @@
     transition: width 0.4s ease;
   }
 
-  /* Description panel */
+  /* Shot title bar — slim strip at very bottom */
   .cam-description {
     position: absolute;
-    bottom: 160px; left: 16px; right: 16px;
-    background: rgba(0,0,0,0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 14px;
-    padding: 14px 16px;
+    bottom: 0; left: 90px; right: 90px;
+    padding: 8px 16px calc(var(--safe-bottom) + 8px);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 10;
-    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
-  .cam-desc-text {
-    font-size: 13px; color: rgba(255,255,255,0.85);
-    line-height: 1.55;
-  }
+  .cam-desc-text { display: none; }
   .cam-mandatory-tag {
-    display: inline-block;
-    font-size: 10px; font-weight: 600;
+    font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 6px;
+    color: var(--accent); white-space: nowrap;
   }
   .cam-optional-tag {
-    display: inline-block;
-    font-size: 10px; font-weight: 600;
+    font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 6px;
+    color: var(--muted); white-space: nowrap;
+  }
+  .cam-shot-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--white); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
   }
 
   /* Bottom controls */
+  /* Shutter on RIGHT edge, vertically centred */
+  .cam-shutter-wrap {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Back + Skip stacked on LEFT edge */
   .cam-controls {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 16px 24px calc(var(--safe-bottom) + 16px);
-    display: flex; align-items: center; justify-content: space-between;
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
     z-index: 10;
   }
   .cam-btn-side {
@@ -311,28 +331,29 @@
   .cam-shutter.capturing { background: var(--accent); }
   .cam-shutter.capturing::after { background: var(--accent); }
 
-  /* Overlay opacity slider */
+  /* Overlay opacity slider — top centre, horizontal */
   .cam-overlay-ctrl {
-    position: absolute; right: 12px; top: 50%;
-    transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    position: absolute; top: 52px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: row; align-items: center; gap: 8px;
     z-index: 10;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 5px 12px; border-radius: 100px;
   }
   .cam-overlay-ctrl input[type=range] {
-    -webkit-appearance: slider-vertical;
-    appearance: slider-vertical;
-    writing-mode: vertical-lr;
-    direction: rtl;
-    width: 28px; height: 120px;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px; height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.3);
     cursor: pointer;
     accent-color: var(--accent);
-    opacity: 0.7;
   }
   .cam-overlay-label {
     font-size: 9px; color: var(--muted);
     letter-spacing: 0.5px; text-transform: uppercase;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
   }
 
   /* ══════════════════════════════
@@ -518,7 +539,7 @@
     </div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.7</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -546,15 +567,27 @@
     <div class="cam-desc-text" id="desc-text">Description goes here.</div>
   </div>
 
+  <!-- Overlay opacity — horizontal, under HUD -->
   <div class="cam-overlay-ctrl">
-    <input type="range" id="overlay-opacity" min="0" max="70" value="38" step="1">
     <div class="cam-overlay-label">Overlay</div>
+    <input type="range" id="overlay-opacity" min="0" max="70" value="38" step="1">
   </div>
 
+  <!-- Back + Skip on LEFT edge -->
   <div class="cam-controls">
     <button class="cam-btn-side" id="btn-back-shot" title="Previous">←</button>
-    <button class="cam-shutter" id="btn-shutter"></button>
     <button class="cam-btn-side skip" id="btn-skip" title="Skip">SKIP</button>
+  </div>
+
+  <!-- Shutter on RIGHT edge -->
+  <div class="cam-shutter-wrap">
+    <button class="cam-shutter" id="btn-shutter"></button>
+  </div>
+
+  <!-- Shot title at bottom centre -->
+  <div class="cam-description">
+    <div class="cam-mandatory-tag" id="desc-tag">● REQUIRED</div>
+    <div class="cam-shot-title" id="hud-name-bottom"></div>
   </div>
 
   <div class="cam-error" id="cam-error">
@@ -790,7 +823,7 @@ function updateCameraUI(idx) {
   const descTag = document.getElementById('desc-tag');
   descTag.textContent = shot.mandatory ? '● REQUIRED' : '○ OPTIONAL';
   descTag.className = shot.mandatory ? 'cam-mandatory-tag' : 'cam-optional-tag';
-  document.getElementById('desc-text').textContent = shot.description;
+  document.getElementById('hud-name-bottom').textContent = shot.name;
 
   // Overlay image
   const overlay = document.getElementById('overlay-img');
