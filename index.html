@@ -679,7 +679,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.4</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.5</div>
 </div>
 
 <!-- ── SCREEN: SETTINGS ── -->
@@ -889,39 +889,85 @@ async function getAvailableCameras() {
   }
 }
 
-async function startCamera() {
+// ── Camera device map — built once after first permission grant ──
+// Maps zoom level (0.5, 1.0, 2.0) to deviceId
+let cameraMap = {};
+let currentLens = 1.0;
+
+async function buildCameraMap() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const videoDevices = devices.filter(d => d.kind === 'videoinput');
+  cameraMap = {};
+
+  for (const d of videoDevices) {
+    const label = d.label.toLowerCase();
+    // Only rear cameras
+    if (!label.includes('back') && !label.includes('rear') && !label.includes('0')) continue;
+    if (label.includes('ultra') || label.includes('0.5') || label.includes('wide')) {
+      cameraMap[0.5] = d.deviceId;
+    } else if (label.includes('telephoto') || label.includes('2x') || label.includes(' 2 ') || label.includes('dual')) {
+      cameraMap[2.0] = d.deviceId;
+    } else if (label.includes('back') || label.includes('rear')) {
+      // Default rear = 1x if not already assigned
+      if (!cameraMap[1.0]) cameraMap[1.0] = d.deviceId;
+    }
+  }
+
+  // Fallback: if we only found one camera, assign it to all
+  if (Object.keys(cameraMap).length === 1) {
+    const onlyId = Object.values(cameraMap)[0];
+    cameraMap[0.5] = cameraMap[0.5] || onlyId;
+    cameraMap[1.0] = cameraMap[1.0] || onlyId;
+    cameraMap[2.0] = cameraMap[2.0] || onlyId;
+  }
+
+  console.log('Camera map:', cameraMap);
+}
+
+function findClosestLens(requested) {
+  const available = Object.keys(cameraMap).map(Number).sort((a,b) => a-b);
+  if (available.length === 0) return null;
+  // Find closest
+  return available.reduce((prev, curr) =>
+    Math.abs(curr - requested) < Math.abs(prev - requested) ? curr : prev
+  );
+}
+
+async function startCamera(requestedLens = 1.0) {
   // Stop existing stream first
   if (stream) {
     stream.getTracks().forEach(t => t.stop());
     stream = null;
   }
+
   try {
-    // Step 1: Get all cameras and find the 2x optical lens
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    availableCameras = devices.filter(d => d.kind === 'videoinput');
+    // First time — request any rear camera to get permission, then build map
+    if (Object.keys(cameraMap).length === 0) {
+      const tempStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }, audio: false
+      });
+      tempStream.getTracks().forEach(t => t.stop());
+      await buildCameraMap();
+    }
 
-    // Try to find the 2x telephoto rear camera by label
-    let targetCamera = availableCameras.find(d =>
-      d.label.toLowerCase().includes('2') &&
-      (d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'))
-    );
+    // Find the best matching lens
+    const closestLens = findClosestLens(requestedLens);
+    const deviceId = closestLens !== null ? cameraMap[closestLens] : null;
+    currentLens = closestLens || requestedLens;
 
-    // Build constraints — prefer 2x telephoto by deviceId if found
-    const videoConstraints = targetCamera
-      ? { deviceId: { exact: targetCamera.deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } }
+    const videoConstraints = deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } }
       : { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
 
     stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 
-    // Step 2: If no dedicated 2x camera found, apply 2x zoom via constraints
-    const track = stream.getVideoTracks()[0];
-    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-    if (!targetCamera && capabilities.zoom) {
-      const minZoom = capabilities.zoom.min || 1;
-      const maxZoom = capabilities.zoom.max || 1;
-      const zoom2x = Math.min(2, maxZoom);
-      if (zoom2x > minZoom) {
-        await track.applyConstraints({ advanced: [{ zoom: zoom2x }] }).catch(() => {});
+    // If same physical camera but different zoom needed, try zoom API
+    if (closestLens !== requestedLens) {
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.zoom) {
+        const zoom = Math.min(Math.max(requestedLens, caps.zoom.min), caps.zoom.max);
+        await track.applyConstraints({ advanced: [{ zoom }] }).catch(() => {});
       }
     }
 
@@ -932,8 +978,11 @@ async function startCamera() {
     video.muted = true;
     await video.play().catch(e => console.warn('play() failed:', e));
 
+    // Show lens indicator briefly
+    showLensIndicator(requestedLens);
+
   } catch(e) {
-    // Fallback to any rear camera
+    // Final fallback
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } },
@@ -950,12 +999,44 @@ async function startCamera() {
   }
 }
 
+// ── Lens indicator toast ──
+function showLensIndicator(lens) {
+  let el = document.getElementById('lens-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'lens-indicator';
+    el.style.cssText = `
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      color: #e8ff47;
+      font-family: 'Syne', sans-serif;
+      font-size: 28px; font-weight: 800;
+      padding: 16px 32px; border-radius: 16px;
+      z-index: 9999; pointer-events: none;
+      transition: opacity 0.4s;
+    `;
+    document.body.appendChild(el);
+  }
+  const label = lens === 0.5 ? '0.5×' : lens === 2.0 ? '2×' : '1×';
+  el.textContent = label;
+  el.style.opacity = '1';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.opacity = '0'; }, 1000);
+}
+
 function startCameraForShot(idx) {
   currentIdx = idx;
   updateCameraUI(idx);
   showScreen('camera');
   checkOrientation();
-  startCamera();
+  const shot = SHOTS[idx];
+  const requestedLens = shot ? (shot.lens || 1.0) : 1.0;
+  // Only switch camera if lens has changed
+  if (requestedLens !== currentLens || !stream) {
+    startCamera(requestedLens);
+  }
 }
 
 function updateCameraUI(idx) {
