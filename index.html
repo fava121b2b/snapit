@@ -611,12 +611,14 @@
     </div>
   </div>
   <div class="token-wrap" id="token-wrap">
-    <div class="token-label">Dropbox Access Token</div>
-    <input class="token-input" id="dropbox-token" type="password" placeholder="Paste your token here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="token-label">Cloudinary Cloud Name</div>
+    <input class="token-input" id="cloud-name" type="text" placeholder="e.g. dxyz1234" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="token-label" style="margin-top:8px;">Upload Preset</div>
+    <input class="token-input" id="upload-preset" type="text" placeholder="e.g. snapit" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="token-hint" id="token-hint"></div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.1</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.2</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -982,23 +984,25 @@ document.getElementById('btn-retake').addEventListener('click', () => {
   checkOrientation();
 });
 
-// ── Dropbox upload ──
+// ── Cloudinary upload ──
 let uploadQueue = [];
 
-async function uploadToDropbox(blob, filename) {
-  const token = localStorage.getItem('dropbox_token');
-  if (!token) throw new Error('No Dropbox token');
+async function uploadToCloudinary(blob, filename) {
+  const cloudName = localStorage.getItem('cloud_name');
+  const uploadPreset = localStorage.getItem('upload_preset');
+  if (!cloudName || !uploadPreset) throw new Error('No Cloudinary credentials');
+
   const date = new Date().toISOString().slice(0, 10);
-  const path = `/SnapIt/${date}/${filename}`;
-  const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: false })
-    },
-    body: blob
-  });
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('public_id', filename.replace('.jpg', ''));
+  formData.append('folder', `SnapIt/${date}`);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: 'POST', body: formData }
+  );
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
   return await res.json();
 }
@@ -1007,7 +1011,7 @@ async function retryQueue() {
   while (uploadQueue.length > 0) {
     const item = uploadQueue[0];
     try {
-      await uploadToDropbox(item.blob, item.filename);
+      await uploadToCloudinary(item.blob, item.filename);
       uploadQueue.shift();
       console.log('Queued upload succeeded:', item.filename);
     } catch(e) {
@@ -1035,7 +1039,7 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
 
   // Upload in background
   try {
-    await uploadToDropbox(blobToUpload, filename);
+    await uploadToCloudinary(blobToUpload, filename);
     console.log('Uploaded:', filename);
     // Retry anything that was queued from earlier
     if (uploadQueue.length > 0) retryQueue();
@@ -1106,39 +1110,70 @@ document.getElementById('btn-new-shoot').addEventListener('click', () => {
   showScreen('home');
 });
 
-// ── Token management ──
-function loadToken() {
-  const saved = localStorage.getItem('dropbox_token');
-  const input = document.getElementById('dropbox-token');
+// ── Cloudinary credentials management ──
+function loadCredentials() {
+  const savedCloud = localStorage.getItem('cloud_name');
+  const savedPreset = localStorage.getItem('upload_preset');
   const hint = document.getElementById('token-hint');
-  if (saved) {
-    input.value = saved;
-    input.classList.add('saved');
-    hint.textContent = '✓ Token saved';
+
+  if (savedCloud) {
+    document.getElementById('cloud-name').value = savedCloud;
+    document.getElementById('cloud-name').classList.add('saved');
+  }
+  if (savedPreset) {
+    document.getElementById('upload-preset').value = savedPreset;
+    document.getElementById('upload-preset').classList.add('saved');
+  }
+  if (savedCloud && savedPreset) {
+    hint.textContent = '✓ Credentials saved';
+    hint.style.color = '#47ff8a';
   }
 }
 
-document.getElementById('dropbox-token').addEventListener('input', function() {
+document.getElementById('cloud-name').addEventListener('input', function() {
   const val = this.value.trim();
-  const hint = document.getElementById('token-hint');
-  if (val.length > 20) {
-    localStorage.setItem('dropbox_token', val);
+  if (val.length > 2) {
+    localStorage.setItem('cloud_name', val);
     this.classList.add('saved');
-    hint.textContent = '✓ Token saved';
   } else {
     this.classList.remove('saved');
-    hint.textContent = '';
   }
+  updateHint();
 });
 
-// Override start button to check token first
+document.getElementById('upload-preset').addEventListener('input', function() {
+  const val = this.value.trim();
+  if (val.length > 1) {
+    localStorage.setItem('upload_preset', val);
+    this.classList.add('saved');
+  } else {
+    this.classList.remove('saved');
+  }
+  updateHint();
+});
+
+function updateHint() {
+  const hint = document.getElementById('token-hint');
+  const cloud = localStorage.getItem('cloud_name');
+  const preset = localStorage.getItem('upload_preset');
+  if (cloud && preset) {
+    hint.textContent = '✓ Credentials saved';
+    hint.style.color = '#47ff8a';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+// Override start button to check credentials first
 document.getElementById('btn-start').addEventListener('click', () => {
-  const token = localStorage.getItem('dropbox_token');
-  if (!token) {
+  const cloud = localStorage.getItem('cloud_name');
+  const preset = localStorage.getItem('upload_preset');
+  if (!cloud || !preset) {
     const hint = document.getElementById('token-hint');
     hint.style.color = '#ff4757';
-    hint.textContent = '⚠ Please enter your Dropbox token first';
-    document.getElementById('dropbox-token').focus();
+    hint.textContent = '⚠ Please enter your Cloudinary credentials first';
+    if (!cloud) document.getElementById('cloud-name').focus();
+    else document.getElementById('upload-preset').focus();
     return;
   }
   currentIdx = 0;
@@ -1146,11 +1181,11 @@ document.getElementById('btn-start').addEventListener('click', () => {
   skippedCount = 0;
   previousPosition = null;
   checkPositionTransition(0, true);
-}, true); // capture phase so it fires before the old listener
+}, true);
 
 // ── Init ──
 loadShots();
-loadToken();
+loadCredentials();
 
 // ── Hide Safari address bar ──
 // Scroll down slightly to push browser chrome away
