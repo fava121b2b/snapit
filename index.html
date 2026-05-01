@@ -115,6 +115,68 @@
   }
   .btn-start:active { transform: scale(0.96); opacity: 0.9; }
 
+  .btn-settings {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 24px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-settings:active { color: var(--white); border-color: var(--white); }
+
+  /* Settings screen */
+  #screen-settings {
+    background: var(--bg);
+    align-items: stretch;
+  }
+  .settings-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: calc(var(--safe-top) + 16px) 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .btn-back-settings {
+    background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; padding: 0;
+  }
+  .btn-back-settings:active { color: var(--white); }
+  .settings-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--white);
+  }
+  .settings-body {
+    flex: 1; padding: 28px 24px;
+    display: flex; flex-direction: column;
+    align-items: stretch; max-width: 400px;
+    width: 100%; align-self: center;
+  }
+  .settings-section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--white); margin-bottom: 6px;
+  }
+  .settings-hint {
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 20px; line-height: 1.5;
+  }
+  .btn-save-settings {
+    margin-top: 24px;
+    background: var(--accent); color: #0a0a0a;
+    border: none; border-radius: 100px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700;
+    padding: 16px; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-save-settings:active { transform: scale(0.97); }
+
   /* Token input */
   .token-wrap {
     display: flex; flex-direction: column; align-items: center;
@@ -611,14 +673,32 @@
     </div>
   </div>
   <div class="token-wrap" id="token-wrap">
-    <div class="token-label">Cloudinary Cloud Name</div>
-    <input class="token-input" id="cloud-name" type="text" placeholder="e.g. dxyz1234" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    <div class="token-label" style="margin-top:8px;">Upload Preset</div>
-    <input class="token-input" id="upload-preset" type="text" placeholder="e.g. snapit" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    <div class="token-hint" id="token-hint"></div>
+    <div class="token-label">Vehicle Registration</div>
+    <input class="token-input" id="reg-number" type="text" placeholder="e.g. AP15XKU" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:2px;font-size:18px;text-align:center;">
+    <div class="token-hint" id="reg-hint"></div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.3</div>
+  <button class="btn-settings" id="btn-settings">⚙ Settings</button>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.4</div>
+</div>
+
+<!-- ── SCREEN: SETTINGS ── -->
+<div class="screen" id="screen-settings">
+  <div class="home-bg"></div>
+  <div class="settings-header">
+    <button class="btn-back-settings" id="btn-back-settings">← Back</button>
+    <div class="settings-title">Settings</div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section-label">Cloudinary Credentials</div>
+    <div class="settings-hint">Find these in your Cloudinary dashboard at cloudinary.com</div>
+    <div class="token-label" style="margin-bottom:6px;">Cloud Name</div>
+    <input class="token-input" id="cloud-name" type="text" placeholder="e.g. dxyz1234" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="token-label" style="margin-top:16px;margin-bottom:6px;">Upload Preset</div>
+    <input class="token-input" id="upload-preset" type="text" placeholder="e.g. snapit" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="token-hint" id="token-hint" style="margin-top:10px;"></div>
+    <button class="btn-save-settings" id="btn-save-settings">Save Settings</button>
+  </div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -1030,7 +1110,7 @@ async function retryQueue() {
 document.getElementById('btn-save-next').addEventListener('click', async () => {
   if (!capturedBlob) return;
   const shot = SHOTS[currentIdx];
-  const filename = `${String(shot.id).padStart(2,'0')}_${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
+  const filename = `${currentReg}-${String(shot.id).padStart(2,'0')}-${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
 
   const saveBtn = document.getElementById('btn-save-next');
   saveBtn.textContent = 'Uploading…';
@@ -1139,78 +1219,76 @@ document.getElementById('btn-new-shoot').addEventListener('click', () => {
   showScreen('home');
 });
 
-// ── Cloudinary credentials management ──
+// ── Registration number ──
+let currentReg = '';
+
 function loadCredentials() {
+  // Load saved Cloudinary credentials into settings screen
   const savedCloud = localStorage.getItem('cloud_name');
   const savedPreset = localStorage.getItem('upload_preset');
-  const hint = document.getElementById('token-hint');
-
-  if (savedCloud) {
-    document.getElementById('cloud-name').value = savedCloud;
-    document.getElementById('cloud-name').classList.add('saved');
-  }
-  if (savedPreset) {
-    document.getElementById('upload-preset').value = savedPreset;
-    document.getElementById('upload-preset').classList.add('saved');
-  }
-  if (savedCloud && savedPreset) {
-    hint.textContent = '✓ Credentials saved';
-    hint.style.color = '#47ff8a';
-  }
+  if (savedCloud) document.getElementById('cloud-name').value = savedCloud;
+  if (savedPreset) document.getElementById('upload-preset').value = savedPreset;
 }
 
-document.getElementById('cloud-name').addEventListener('input', function() {
-  const val = this.value.trim();
-  if (val.length > 2) {
-    localStorage.setItem('cloud_name', val);
-    this.classList.add('saved');
-  } else {
-    this.classList.remove('saved');
-  }
-  updateHint();
+// Auto-uppercase reg input
+document.getElementById('reg-number').addEventListener('input', function() {
+  this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const hint = document.getElementById('reg-hint');
+  hint.textContent = this.value.length > 1 ? '✓ Ready' : '';
+  hint.style.color = '#47ff8a';
 });
 
-document.getElementById('upload-preset').addEventListener('input', function() {
-  const val = this.value.trim();
-  if (val.length > 1) {
-    localStorage.setItem('upload_preset', val);
-    this.classList.add('saved');
-  } else {
-    this.classList.remove('saved');
-  }
-  updateHint();
+// ── Settings screen ──
+document.getElementById('btn-settings').addEventListener('click', () => {
+  showScreen('settings');
 });
 
-function updateHint() {
+document.getElementById('btn-back-settings').addEventListener('click', () => {
+  showScreen('home');
+});
+
+document.getElementById('btn-save-settings').addEventListener('click', () => {
+  const cloud = document.getElementById('cloud-name').value.trim();
+  const preset = document.getElementById('upload-preset').value.trim();
   const hint = document.getElementById('token-hint');
-  const cloud = localStorage.getItem('cloud_name');
-  const preset = localStorage.getItem('upload_preset');
-  if (cloud && preset) {
-    hint.textContent = '✓ Credentials saved';
-    hint.style.color = '#47ff8a';
-  } else {
-    hint.textContent = '';
+  if (!cloud || !preset) {
+    hint.textContent = '⚠ Please fill in both fields';
+    hint.style.color = '#ff4757';
+    return;
   }
-}
+  localStorage.setItem('cloud_name', cloud);
+  localStorage.setItem('upload_preset', preset);
+  hint.textContent = '✓ Saved!';
+  hint.style.color = '#47ff8a';
+  setTimeout(() => showScreen('home'), 800);
+});
 
-// Override start button to check credentials first
+// ── Start shoot ──
 document.getElementById('btn-start').addEventListener('click', () => {
   const cloud = localStorage.getItem('cloud_name');
   const preset = localStorage.getItem('upload_preset');
+  const reg = document.getElementById('reg-number').value.trim().toUpperCase();
+  const hint = document.getElementById('reg-hint');
+
   if (!cloud || !preset) {
-    const hint = document.getElementById('token-hint');
+    hint.textContent = '⚠ Set up Cloudinary in Settings first';
     hint.style.color = '#ff4757';
-    hint.textContent = '⚠ Please enter your Cloudinary credentials first';
-    if (!cloud) document.getElementById('cloud-name').focus();
-    else document.getElementById('upload-preset').focus();
     return;
   }
+  if (!reg) {
+    hint.textContent = '⚠ Please enter the vehicle registration';
+    hint.style.color = '#ff4757';
+    document.getElementById('reg-number').focus();
+    return;
+  }
+
+  currentReg = reg;
   currentIdx = 0;
   capturedCount = 0;
   skippedCount = 0;
   previousPosition = null;
   checkPositionTransition(0, true);
-}, true);
+});
 
 // ── Init ──
 loadShots();
