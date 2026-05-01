@@ -171,10 +171,10 @@
     width: 100%; height: 100%;
     object-fit: contain;
     object-position: center;
-    opacity: 0.38;
+    opacity: 0.4;
     pointer-events: none;
     transition: opacity 0.3s;
-    mix-blend-mode: lighten;
+    display: none;
   }
 
   /* Top HUD bar */
@@ -709,9 +709,12 @@ function updateCameraUI(idx) {
 
   // Overlay image
   const overlay = document.getElementById('overlay-img');
-  overlay.src = `overlays/photo_${shot.id}.jpg`;
-  overlay.onerror = () => { overlay.style.display = 'none'; };
+  overlay.style.display = 'none';
   overlay.onload = () => { overlay.style.display = 'block'; };
+  overlay.onerror = () => { overlay.style.display = 'none'; };
+  // Force reload by busting any cached broken state
+  overlay.src = '';
+  overlay.src = `overlays/photo_${shot.id}.jpg?v=1`;
 
   // Progress
   const pct = (idx / SHOTS.length) * 100;
