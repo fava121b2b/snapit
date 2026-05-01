@@ -237,40 +237,39 @@
     transition: width 0.4s ease;
   }
 
-  /* Shot title bar — slim strip at very bottom */
-  .cam-description {
-    position: absolute;
-    bottom: 0; left: 90px; right: 90px;
-    padding: 8px 16px calc(var(--safe-bottom) + 8px);
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-  .cam-desc-text { display: none; }
+  /* Required/optional badge — top left */
   .cam-mandatory-tag {
+    position: absolute;
+    top: calc(var(--safe-top) + 44px);
+    left: 70px;
     font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: var(--accent); white-space: nowrap;
+    color: var(--accent);
+    z-index: 11;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 4px 10px; border-radius: 100px;
   }
   .cam-optional-tag {
+    position: absolute;
+    top: calc(var(--safe-top) + 44px);
+    left: 70px;
     font-size: 10px; font-weight: 700;
     letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); white-space: nowrap;
+    color: var(--muted);
+    z-index: 11;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 4px 10px; border-radius: 100px;
   }
-  .cam-shot-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px; font-weight: 700;
-    color: var(--white); white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
-  }
+  .cam-desc-text { display: none; }
+  .cam-shot-title { display: none; }
+  .cam-description { display: none; }
 
   /* Bottom controls */
-  /* Shutter on RIGHT edge, vertically centred */
+  /* Shutter + nav all on RIGHT edge */
   .cam-shutter-wrap {
     position: absolute;
     right: 16px;
@@ -280,19 +279,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 14px;
   }
 
-  /* Back + Skip stacked on LEFT edge */
+  /* Hide old cam-controls — nav now inside shutter-wrap */
   .cam-controls {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    z-index: 10;
+    display: none;
   }
   .cam-btn-side {
     width: 54px; height: 54px;
@@ -331,29 +323,29 @@
   .cam-shutter.capturing { background: var(--accent); }
   .cam-shutter.capturing::after { background: var(--accent); }
 
-  /* Overlay opacity slider — top centre, horizontal */
+  /* Overlay opacity slider — LEFT side, vertical */
   .cam-overlay-ctrl {
-    position: absolute; top: 52px; left: 50%;
-    transform: translateX(-50%);
-    display: flex; flex-direction: row; align-items: center; gap: 8px;
+    position: absolute;
+    left: 16px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
     z-index: 10;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 5px 12px; border-radius: 100px;
   }
   .cam-overlay-ctrl input[type=range] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 80px; height: 3px;
-    border-radius: 2px;
-    background: rgba(255,255,255,0.3);
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 28px; height: 110px;
     cursor: pointer;
     accent-color: var(--accent);
+    opacity: 0.75;
   }
   .cam-overlay-label {
     font-size: 9px; color: var(--muted);
     letter-spacing: 0.5px; text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
   }
 
   /* ══════════════════════════════
@@ -505,6 +497,63 @@
   }
   .portrait-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 10px; }
   .portrait-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ══════════════════════════════
+     ADD TO HOME SCREEN PROMPT
+  ══════════════════════════════ */
+  #install-prompt {
+    display: none;
+    position: fixed; inset: 0; z-index: 999999;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+    padding: 32px; text-align: center;
+  }
+  #install-prompt.visible { display: flex; flex-direction: column; }
+  .install-icon { font-size: 52px; margin-bottom: 20px; }
+  .install-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 800;
+    margin-bottom: 12px; color: var(--white);
+  }
+  .install-text {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.7; margin-bottom: 28px; max-width: 320px;
+  }
+  .install-text strong { color: var(--white); }
+  .install-steps {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    text-align: left; width: 100%; max-width: 340px;
+  }
+  .install-step {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 14px; color: var(--white);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .install-step:last-child { border-bottom: none; }
+  .install-step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #0a0a0a;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-install-dismiss {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 12px 32px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -539,7 +588,7 @@
     </div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.7</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.8</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -567,27 +616,24 @@
     <div class="cam-desc-text" id="desc-text">Description goes here.</div>
   </div>
 
-  <!-- Overlay opacity — horizontal, under HUD -->
+  <!-- Required/Optional badge — top left, standalone -->
+  <div class="cam-mandatory-tag" id="desc-tag">● REQUIRED</div>
+
+  <!-- Overlay slider — LEFT edge, vertical -->
   <div class="cam-overlay-ctrl">
-    <div class="cam-overlay-label">Overlay</div>
     <input type="range" id="overlay-opacity" min="0" max="70" value="38" step="1">
+    <div class="cam-overlay-label">Overlay</div>
   </div>
 
-  <!-- Back + Skip on LEFT edge -->
-  <div class="cam-controls">
+  <!-- Shutter + Back + Skip stacked on RIGHT edge -->
+  <div class="cam-shutter-wrap">
     <button class="cam-btn-side" id="btn-back-shot" title="Previous">←</button>
+    <button class="cam-shutter" id="btn-shutter"></button>
     <button class="cam-btn-side skip" id="btn-skip" title="Skip">SKIP</button>
   </div>
 
-  <!-- Shutter on RIGHT edge -->
-  <div class="cam-shutter-wrap">
-    <button class="cam-shutter" id="btn-shutter"></button>
-  </div>
-
-  <!-- Shot title at bottom centre -->
-  <div class="cam-description">
-    <div class="cam-mandatory-tag" id="desc-tag">● REQUIRED</div>
-    <div class="cam-shot-title" id="hud-name-bottom"></div>
+  <!-- Hidden controls div to satisfy JS references -->
+  <div class="cam-controls" style="display:none;">
   </div>
 
   <div class="cam-error" id="cam-error">
@@ -605,7 +651,7 @@
     <div class="retake-hint">Happy with this shot?</div>
     <div class="retake-buttons">
       <button class="btn-retake" id="btn-retake">↩ Retake</button>
-      <button class="btn-save" id="btn-save-next">Save & Next →</button>
+      <button class="btn-save" id="btn-save-next">Save to Photos →</button>
     </div>
   </div>
 </div>
@@ -915,20 +961,37 @@ document.getElementById('btn-retake').addEventListener('click', () => {
   checkOrientation();
 });
 
-// ── Save & Next ──
-document.getElementById('btn-save-next').addEventListener('click', () => {
+// ── Save & Next — Web Share API (saves directly to Photos on iOS) ──
+document.getElementById('btn-save-next').addEventListener('click', async () => {
   if (!capturedBlob) return;
   const shot = SHOTS[currentIdx];
+  const filename = `${String(shot.id).padStart(2,'0')}_${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
+  const file = new File([capturedBlob], filename, { type: 'image/jpeg' });
 
-  // Save to device (download trigger)
+  // Try Web Share API first — shows native iOS share sheet with Save Image at top
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: shot.name });
+      // User completed share (tapped Save Image)
+      capturedCount++;
+      capturedBlob = null;
+      goToNextShot();
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') {
+        // User cancelled share sheet — stay on review screen so they can retry
+        return;
+      }
+    }
+  }
+
+  // Fallback: standard download if Web Share not supported
   const url = URL.createObjectURL(capturedBlob);
   const a = document.createElement('a');
-  const filename = `${String(shot.id).padStart(2,'0')}_${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
   a.href = url;
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
-
   capturedCount++;
   capturedBlob = null;
   goToNextShot();
