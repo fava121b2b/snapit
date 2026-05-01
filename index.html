@@ -518,7 +518,7 @@
     </div>
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.5</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v1.6</div>
 </div>
 
 <!-- ── SCREEN: POSITION TRANSITION ── -->
@@ -553,10 +553,7 @@
 
   <div class="cam-controls">
     <button class="cam-btn-side" id="btn-back-shot" title="Previous">←</button>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-      <button class="cam-btn-side" id="btn-switch-cam" title="Switch Camera" style="width:42px;height:42px;font-size:18px;">⇄</button>
-      <button class="cam-shutter" id="btn-shutter"></button>
-    </div>
+    <button class="cam-shutter" id="btn-shutter"></button>
     <button class="cam-btn-side skip" id="btn-skip" title="Skip">SKIP</button>
   </div>
 
@@ -710,58 +707,66 @@ async function getAvailableCameras() {
   }
 }
 
-async function startCamera(deviceId = null) {
+async function startCamera() {
   // Stop existing stream first
   if (stream) {
     stream.getTracks().forEach(t => t.stop());
     stream = null;
   }
   try {
-    const constraints = {
-      video: deviceId
-        ? { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 }, aspectRatio: { ideal: 4/3 } }
-        : { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 }, aspectRatio: { ideal: 4/3 } },
-      audio: false
-    };
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    // Step 1: Get all cameras and find the 2x optical lens
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    availableCameras = devices.filter(d => d.kind === 'videoinput');
+
+    // Try to find the 2x telephoto rear camera by label
+    let targetCamera = availableCameras.find(d =>
+      d.label.toLowerCase().includes('2') &&
+      (d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'))
+    );
+
+    // Build constraints — prefer 2x telephoto by deviceId if found
+    const videoConstraints = targetCamera
+      ? { deviceId: { exact: targetCamera.deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } }
+      : { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
+
+    stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+
+    // Step 2: If no dedicated 2x camera found, apply 2x zoom via constraints
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+    if (!targetCamera && capabilities.zoom) {
+      const minZoom = capabilities.zoom.min || 1;
+      const maxZoom = capabilities.zoom.max || 1;
+      const zoom2x = Math.min(2, maxZoom);
+      if (zoom2x > minZoom) {
+        await track.applyConstraints({ advanced: [{ zoom: zoom2x }] }).catch(() => {});
+      }
+    }
+
     const video = document.getElementById('camera-video');
     video.srcObject = stream;
     video.setAttribute('playsinline', '');
     video.setAttribute('autoplay', '');
     video.muted = true;
     await video.play().catch(e => console.warn('play() failed:', e));
-    // Enumerate cameras after first permission grant
-    if (availableCameras.length === 0) await getAvailableCameras();
-  } catch(e) {
-    document.getElementById('cam-error').classList.add('visible');
-    console.error('Camera error', e);
-  }
-}
 
-// ── Switch camera ──
-document.getElementById('btn-switch-cam').addEventListener('click', async () => {
-  if (availableCameras.length <= 1) {
-    // Try facingMode toggle as fallback
-    const currentFacing = stream?.getVideoTracks()[0]?.getSettings()?.facingMode;
-    const nextFacing = currentFacing === 'environment' ? 'user' : 'environment';
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  } catch(e) {
+    // Fallback to any rear camera
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: nextFacing }, width: { ideal: 4032 }, height: { ideal: 3024 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } },
         audio: false
       });
       const video = document.getElementById('camera-video');
       video.srcObject = stream;
-      await video.play().catch(e => {});
-    } catch(e) {
-      // exact facingMode failed, try ideal
-      await startCamera();
+      video.muted = true;
+      await video.play().catch(() => {});
+    } catch(e2) {
+      document.getElementById('cam-error').classList.add('visible');
+      console.error('Camera error', e2);
     }
-    return;
   }
-  currentCameraIdx = (currentCameraIdx + 1) % availableCameras.length;
-  await startCamera(availableCameras[currentCameraIdx].deviceId);
-});
+}
 
 function startCameraForShot(idx) {
   currentIdx = idx;
@@ -831,24 +836,25 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
   // Haptic
   if (navigator.vibrate) navigator.vibrate(50);
 
-  // Capture exactly what's in the 4:3 viewfinder box
+  // Capture: use 2x lens feed, cropped to 4:3 to match overlay framing
   const video = document.getElementById('camera-video');
   const canvas = document.createElement('canvas');
 
   const videoW = video.videoWidth || 1920;
   const videoH = video.videoHeight || 1080;
-  const targetRatio = 4 / 3; // must match viewfinder ratio
-
-  let srcX = 0, srcY = 0, srcW = videoW, srcH = videoH;
+  const targetRatio = 4 / 3;
   const videoRatio = videoW / videoH;
 
+  // Crop to 4:3 from centre of the 2x feed
+  let srcX = 0, srcY = 0, srcW = videoW, srcH = videoH;
+
   if (videoRatio > targetRatio) {
-    // Sensor wider than 4:3 — trim left and right equally
+    // Feed is wider than 4:3 — crop sides
     srcH = videoH;
     srcW = Math.round(videoH * targetRatio);
     srcX = Math.round((videoW - srcW) / 2);
   } else {
-    // Sensor taller than 4:3 — trim top and bottom equally
+    // Feed is taller than 4:3 — crop top/bottom
     srcW = videoW;
     srcH = Math.round(videoW / targetRatio);
     srcY = Math.round((videoH - srcH) / 2);
