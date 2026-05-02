@@ -264,11 +264,15 @@
   .complete-warning-sub { font-size:12px; color:var(--muted); line-height:1.5; }
   .btn-complete-save { display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid var(--border); color:var(--white); cursor:pointer; flex-shrink:0; }
   .btn-complete-save:active { background:rgba(255,255,255,0.15); }
-  .btn-upload-missing { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; padding:12px 24px; cursor:pointer; display:none; }
-  .btn-upload-missing.visible { display:block; }
-  .btn-upload-missing:disabled { opacity:0.6; }
-  .btn-finish-delete { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
-  .btn-finish-delete:active { color:var(--white); border-color:var(--white); }
+
+  .upload-progress-wrap { width:100%; max-width:320px; display:none; flex-direction:column; align-items:center; gap:8px; }
+  .upload-progress-wrap.visible { display:flex; }
+  .upload-progress-bar-track { width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
+  .upload-progress-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; width:0%; }
+  .upload-progress-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; }
+  .btn-finish-delete { background:transparent; border:1.5px solid rgba(255,71,87,0.5); color:var(--red); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
+  .btn-finish-delete:active { background:var(--red-dim); }
+  .btn-finish-delete-warning { font-size:11px; color:var(--muted); margin-top:8px; max-width:280px; line-height:1.4; }
   .complete-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:8px; }
   .complete-sub { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:24px; max-width:340px; }
   .complete-stats { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
@@ -327,7 +331,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.2</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.6</div>
 </div>
 
 <!-- SETTINGS -->
@@ -457,16 +461,23 @@
     All photos uploaded successfully ✓✓
   </div>
 
+  <!-- Live upload progress -->
+  <div class="upload-progress-wrap" id="upload-progress-wrap">
+    <div class="upload-progress-bar-track">
+      <div class="upload-progress-bar-fill" id="upload-progress-fill"></div>
+    </div>
+    <div class="upload-progress-label" id="upload-progress-label">Uploading…</div>
+  </div>
+
   <div class="complete-warning" id="complete-warning">
     <div class="complete-warning-icon">⚠</div>
     <div class="complete-warning-text">
       <div class="complete-warning-title" id="complete-warning-title">Some photos didn't upload</div>
-      <div class="complete-warning-sub">Check your connection, then tap Upload Missing.</div>
+      <div class="complete-warning-sub">Check your connection. Retrying automatically.</div>
     </div>
   </div>
 
   <div class="complete-btns">
-    <button class="btn-upload-missing" id="btn-upload-missing">↑ Upload Missing</button>
     <button class="btn-complete-save" id="btn-complete-save" title="Save to Device">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/>
@@ -474,13 +485,14 @@
     </button>
     <button class="btn-finish-delete" id="btn-finish-delete">Finish &amp; Delete</button>
   </div>
+  <div class="btn-finish-delete-warning">Any photos not uploaded or saved locally will be lost permanently.</div>
 </div>
 
 </div>
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v6.2
+// SNAP IT v6.6
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -715,8 +727,8 @@ function updateCameraUI(idx) {
   if (shot.mandatory === true) { tag.textContent = '● REQUIRED'; tag.className = 'cam-tag required'; }
   else { tag.textContent = '○ OPTIONAL'; tag.className = 'cam-tag optional'; }
   const skipBtn = document.getElementById('btn-skip');
-  if (shot.mandatory === true) { skipBtn.className = 'cam-btn-side skip mandatory'; skipBtn.disabled = true; }
-  else { skipBtn.className = 'cam-btn-side skip optional'; skipBtn.disabled = false; }
+  // TESTING MODE: all shots skippable — revert to mandatory check later
+  skipBtn.className = 'cam-btn-side skip optional'; skipBtn.disabled = false;
   const backBtn = document.getElementById('btn-back-shot');
   backBtn.style.opacity = idx === 0 ? '0.25' : '1';
   backBtn.disabled = idx === 0;
@@ -820,6 +832,17 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
   if (navigator.vibrate) navigator.vibrate(50);
 
   const video = document.getElementById('camera-video');
+
+  // Wait for a fresh video frame before capturing to avoid black images
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  // Double-check video is still playing and has valid dimensions
+  if (video.readyState < 2 || video.videoWidth === 0) {
+    shutterBtn.classList.remove('capturing');
+    showToast('⚠ Camera not ready — try again', 'error');
+    return;
+  }
+
   const canvas = document.createElement('canvas');
   const vW = video.videoWidth || 1920, vH = video.videoHeight || 1080;
   const ratio = 4/3, vRatio = vW/vH;
@@ -828,6 +851,16 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
   else { sw=vW; sh=Math.round(vW/ratio); sy=Math.round((vH-sh)/2); }
   canvas.width=sw; canvas.height=sh;
   canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  // Verify the frame isn't black — check a sample of pixels
+  const ctx = canvas.getContext('2d');
+  const sample = ctx.getImageData(Math.round(sw/2), Math.round(sh/2), 4, 4).data;
+  const avgBrightness = Array.from(sample).reduce((a,b) => a+b, 0) / sample.length;
+  if (avgBrightness < 3) {
+    // Frame appears black — wait another frame and retry once
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+  }
 
   // Cap to 3840px and quality 0.80 to stay under Cloudinary 10MB limit
   const MAX_PX = 3840;
@@ -906,7 +939,7 @@ function blobToDataUrl(blob) {
 // ── Skip ──
 document.getElementById('btn-skip').addEventListener('click', () => {
   const shot = SHOTS[currentIdx];
-  if (!shot || shot.mandatory === true) return;
+  if (!shot) return;
   skippedShots.add(shot.id);
   skippedCount++;
   const nextIdx = findNextUntaken(currentIdx + 1);
@@ -1077,47 +1110,53 @@ function updateCompleteScreen() {
   document.getElementById('done-captured').textContent = capturedCount;
   document.getElementById('done-uploaded').textContent = uploadedCount;
   document.getElementById('done-skipped').textContent = skippedCount;
+  // Update stat labels to be unambiguous
+  document.querySelector('[for-stat="captured"]') && (document.querySelector('[for-stat="captured"]').textContent = 'Taken');
 
   const icon = document.getElementById('complete-icon');
   const title = document.getElementById('complete-title');
   const warning = document.getElementById('complete-warning');
   const success = document.getElementById('complete-success');
-  const uploadMissingBtn = document.getElementById('btn-upload-missing');
 
-  if (failedCount > 0) {
+  const pendingCount = uploadQueue.length;
+  const totalUploading = failedCount + pendingCount;
+
+  const progressWrap = document.getElementById('upload-progress-wrap');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const progressLabel = document.getElementById('upload-progress-label');
+
+  if (pendingCount > 0) {
+    // Actively uploading — show progress bar
+    icon.textContent = '⏫'; icon.className = 'complete-icon';
+    title.textContent = 'Uploading…';
+    warning.classList.remove('visible'); success.classList.remove('visible');
+    progressWrap.classList.add('visible');
+    const total = capturedCount;
+    const done = uploadedCount;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = `${done} of ${total} uploaded`;
+  } else if (failedCount > 0) {
+    // Some failed — show warning, hide progress
     icon.textContent = '⚠'; icon.className = 'complete-icon warning';
     title.textContent = 'Shoot Complete';
     warning.classList.add('visible'); success.classList.remove('visible');
-    uploadMissingBtn.classList.add('visible'); uploadMissingBtn.disabled = false;
-    uploadMissingBtn.textContent = `↑ Upload ${failedCount} Missing Photo${failedCount > 1 ? 's' : ''}`;
+    progressWrap.classList.remove('visible');
     document.getElementById('complete-warning-title').textContent =
       `${failedCount} photo${failedCount > 1 ? 's' : ''} didn't upload`;
+    document.querySelector('#complete-warning .complete-warning-sub').textContent =
+      'Check your connection. Retrying automatically.';
   } else {
+    // All done — success state
     icon.textContent = '✓'; icon.className = 'complete-icon';
     title.textContent = 'Shoot Complete!';
     warning.classList.remove('visible'); success.classList.add('visible');
-    uploadMissingBtn.classList.remove('visible');
+    progressWrap.classList.remove('visible');
+    progressFill.style.width = '100%';
   }
 }
 
 // ── View list from complete ──
-// Upload Missing button
-document.getElementById('btn-upload-missing').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-upload-missing');
-  btn.disabled = true; btn.textContent = 'Uploading…';
-  const failed = Object.entries(shotData).filter(([,d]) => d.status === 'failed');
-  for (const [id, data] of failed) {
-    shotData[id].status = 'taken';
-    try {
-      await uploadToCloudinary(data.blob, data.filename);
-      shotData[id].status = 'uploaded';
-    } catch(e) {
-      shotData[id].status = 'failed';
-    }
-  }
-  updateCompleteScreen();
-});
-
 // Finish & Delete — clear session and go home
 document.getElementById('btn-finish-delete').addEventListener('click', () => {
   currentIdx=0; capturedCount=0; skippedCount=0; previousPosition=null;
