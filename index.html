@@ -101,28 +101,23 @@
 
   /* Clean stats row */
   .list-stats-row {
-    display:flex; align-items:center; gap:0;
-    padding:10px 20px; border-bottom:1px solid var(--border);
-    flex-shrink:0;
+    display:flex; align-items:center;
+    padding:12px 20px; border-bottom:1px solid var(--border);
+    flex-shrink:0; gap:24px;
   }
   .list-stat-item {
-    flex:1; text-align:center;
-    border-right:1px solid var(--border);
-    padding:0 8px;
+    display:flex; flex-direction:column; align-items:center;
   }
-  .list-stat-item:last-child { border-right:none; }
   .list-stat-num {
-    font-family:'Syne',sans-serif; font-size:18px; font-weight:800;
-    line-height:1;
+    font-family:'Syne',sans-serif; font-size:22px; font-weight:800;
+    line-height:1; color:var(--accent);
+    writing-mode:horizontal-tb;
   }
   .list-stat-label {
     font-size:9px; color:var(--muted);
-    text-transform:uppercase; letter-spacing:1px; margin-top:2px;
+    text-transform:uppercase; letter-spacing:1px; margin-top:3px;
   }
-  .stat-taken .list-stat-num { color:var(--accent); }
-  .stat-uploaded .list-stat-num { color:var(--green); }
   .stat-failed .list-stat-num { color:var(--red); }
-  .stat-skipped .list-stat-num { color:var(--muted); }
 
   /* All done banner */
   .list-complete-banner { margin:10px 16px; background:rgba(71,255,138,0.1); border:1px solid rgba(71,255,138,0.3); border-radius:14px; padding:12px 16px; display:none; align-items:center; gap:12px; flex-shrink:0; }
@@ -145,9 +140,8 @@
     font-family:'Syne',sans-serif; font-size:11px; font-weight:800;
     letter-spacing:1px; padding:4px 12px; border-radius:100px;
     white-space:nowrap;
+    background:rgba(255,255,255,0.07); color:var(--muted);
   }
-  .list-pos-badge.pos-a { background:rgba(71,184,255,0.2); color:var(--pos-a); }
-  .list-pos-badge.pos-b { background:rgba(255,159,71,0.2); color:var(--pos-b); }
   .list-pos-label { font-size:12px; color:var(--muted); }
 
   /* Shot row */
@@ -292,7 +286,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.7</div>
 </div>
 
 <!-- SETTINGS -->
@@ -335,10 +329,9 @@
 
   <!-- Clean stats row -->
   <div class="list-stats-row">
-    <div class="list-stat-item stat-taken"><div class="list-stat-num" id="ls-taken">0</div><div class="list-stat-label">Taken</div></div>
-    <div class="list-stat-item stat-uploaded"><div class="list-stat-num" id="ls-uploaded">0</div><div class="list-stat-label">Uploaded</div></div>
+    <div class="list-stat-item"><div class="list-stat-num" id="ls-taken">0</div><div class="list-stat-label">Taken</div></div>
+    <div class="list-stat-item"><div class="list-stat-num" id="ls-uploaded">0</div><div class="list-stat-label">Uploaded</div></div>
     <div class="list-stat-item stat-failed"><div class="list-stat-num" id="ls-failed">0</div><div class="list-stat-label">Failed</div></div>
-    <div class="list-stat-item stat-skipped"><div class="list-stat-num" id="ls-skipped">0</div><div class="list-stat-label">Skipped</div></div>
   </div>
 
   <div class="list-complete-banner" id="list-complete-banner">
@@ -418,7 +411,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.6
+// SNAP IT v5.7
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -718,48 +711,43 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
 // ── Retake ──
 document.getElementById('btn-retake').addEventListener('click', () => {
   capturedBlob = null;
-  if (reviewingFromList) {
-    // Go back to review of existing shot
-    const shot = SHOTS[currentIdx];
-    const data = shotData[shot.id];
-    if (data) { showReview(shot.id); return; }
-  }
+  // Always go to camera — whether retaking a new shot or replacing a reviewed one
   showScreen('camera');
 });
 
 // ── Save & Next ──
 document.getElementById('btn-save-next').addEventListener('click', async () => {
-  if (!capturedBlob) return;
   const shot = SHOTS[currentIdx];
-  const filename = `${currentReg}-${String(shot.id).padStart(2,'0')}-${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
-  const dataUrl = await blobToDataUrl(capturedBlob);
 
-  // First time capturing this shot
-  if (!shotData[shot.id]) capturedCount++;
-
-  shotData[shot.id] = { blob: capturedBlob, dataUrl, filename, status: 'taken' };
-  capturedBlob = null;
-  uploadShot(shot.id);
+  // If there's a new blob, save it. Otherwise keep existing (Keep & Next flow)
+  if (capturedBlob) {
+    const filename = `${currentReg}-${String(shot.id).padStart(2,'0')}-${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
+    const dataUrl = await blobToDataUrl(capturedBlob);
+    if (!shotData[shot.id]) capturedCount++;
+    shotData[shot.id] = { blob: capturedBlob, dataUrl, filename, status: 'taken' };
+    capturedBlob = null;
+    uploadShot(shot.id);
+  }
+  // If no blob and no existing data — nothing to save, bail
+  if (!shotData[shot.id]) return;
 
   reviewingFromList = false;
 
-  // Find earliest untaken, unskipped shot from beginning
+  // Find earliest untaken, unskipped shot
   const nextIdx = findNextUntaken(0);
   if (nextIdx === -1) {
-    // All shots accounted for — go to list
     showScreen('list'); refreshList(); return;
   }
 
   currentIdx = nextIdx;
   updateCameraUI(currentIdx);
 
-  // If in landscape, stay in camera and continue shooting
+  // Landscape = stay in camera, portrait = go to list
   if (window.innerWidth > window.innerHeight) {
     const requestedLens = SHOTS[currentIdx].lens || 1.0;
     updateLensButtons(requestedLens);
     if (requestedLens !== currentLens || !stream) { currentLens = requestedLens; startCamera(requestedLens); }
   } else {
-    // Portrait — go to list, user rotates to shoot
     showScreen('list'); refreshList();
   }
 });
@@ -820,7 +808,7 @@ function refreshList() {
   document.getElementById('ls-taken').textContent = taken;
   document.getElementById('ls-uploaded').textContent = uploaded;
   document.getElementById('ls-failed').textContent = failed;
-  document.getElementById('ls-skipped').textContent = skippedCount;
+
   document.getElementById('list-complete-banner').classList.toggle('visible', allDone);
 
 
@@ -878,7 +866,7 @@ function refreshList() {
     const statusEl = document.createElement('div'); statusEl.className = 'list-item-status';
     const pill = document.createElement('div'); pill.className = 'status-pill';
     if (isCurrent && status === 'not-taken') {
-      pill.classList.add('current-indicator'); pill.textContent = '▶ Current';
+      pill.classList.add('current-indicator'); pill.textContent = 'Current';
     } else if (status === 'not-taken') {
       pill.classList.add('not-taken'); pill.textContent = shot.mandatory ? 'Required' : 'Optional';
     } else if (status === 'skipped') {
