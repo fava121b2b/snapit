@@ -679,7 +679,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.5</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.6</div>
 </div>
 
 <!-- ── SCREEN: SETTINGS ── -->
@@ -899,6 +899,7 @@ async function buildCameraMap() {
   const videoDevices = devices.filter(d => d.kind === 'videoinput');
   cameraMap = {};
 
+  console.log('All video devices:', videoDevices.map(d => d.label));
   for (const d of videoDevices) {
     const label = d.label.toLowerCase();
     // Only rear cameras
@@ -922,6 +923,11 @@ async function buildCameraMap() {
   }
 
   console.log('Camera map:', cameraMap);
+
+  // Show diagnostic info as toast so we can see it on device
+  const labels = videoDevices.map(d => d.label || 'unnamed').join(' | ');
+  const mapped = Object.entries(cameraMap).map(([k,v]) => `${k}x:${v.slice(-4)}`).join(', ');
+  showToast(`Cameras: ${videoDevices.length} found. Map: ${mapped}`, 'success');
 }
 
 function findClosestLens(requested) {
