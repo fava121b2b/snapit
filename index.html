@@ -176,17 +176,12 @@
   .btn-reupload { font-size:10px; font-weight:700; color:var(--red); background:transparent; border:1px solid var(--red); border-radius:100px; padding:2px 8px; cursor:pointer; }
 
   /* ══ POSITION ══ */
-  #screen-position { background:var(--bg); align-items:center; justify-content:center; text-align:center; padding:40px; }
-  .pos-icon {
-    width:80px; height:80px; border-radius:16px;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Syne',sans-serif; font-size:32px; font-weight:800;
-    margin-bottom:24px; background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.12); color:var(--white); letter-spacing:2px;
-  }
-  .pos-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:12px; color:var(--white); }
-  .pos-subtitle { font-size:15px; color:var(--muted); line-height:1.6; max-width:300px; margin-bottom:48px; }
+  #screen-position { background:var(--bg); align-items:center; justify-content:center; text-align:center; padding:28px 40px; gap:0; }
+  .pos-title { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; margin-bottom:8px; color:var(--white); }
+  .pos-subtitle { font-size:14px; color:var(--muted); line-height:1.6; max-width:320px; margin-bottom:20px; }
   .pos-subtitle strong { color:var(--white); }
+  .pos-diagram { width:100%; max-width:320px; margin-bottom:24px; }
+  .pos-diagram svg { width:100%; height:auto; display:block; }
   .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; }
   .btn-pos-ready:active { opacity:0.9; }
 
@@ -299,7 +294,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.9</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.0</div>
 </div>
 
 <!-- SETTINGS -->
@@ -359,9 +354,9 @@
 
 <!-- POSITION -->
 <div class="screen" id="screen-position">
-  <div class="pos-icon" id="pos-icon">A</div>
   <div class="pos-title" id="pos-title">Move to Position A</div>
   <div class="pos-subtitle" id="pos-subtitle"></div>
+  <div class="pos-diagram" id="pos-diagram"></div>
   <button class="btn-pos-ready" id="btn-pos-ready">Vehicle Ready — Let's Go</button>
 </div>
 
@@ -432,7 +427,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.9
+// SNAP IT v6.0
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -554,12 +549,56 @@ document.getElementById('btn-start').addEventListener('click', () => {
 });
 
 // ── Show position screen ──
+const SVG_POS_A = `<svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+  <line x1="10" y1="38" x2="310" y2="38" stroke="#ffffff" stroke-width="1.5" opacity="0.6"/>
+  <g transform="translate(155,140) rotate(-45)">
+    <rect x="-26" y="-58" width="52" height="112" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.5"/>
+    <rect x="-24" y="-56" width="48" height="108" rx="11" fill="#1e1e1e" stroke="#2e2e2e" stroke-width="0.5"/>
+    <rect x="-15" y="-44" width="30" height="18" rx="3" fill="#141f2e" stroke="#1e3050" stroke-width="0.8"/>
+    <rect x="-15" y="24" width="30" height="18" rx="3" fill="#141f2e" stroke="#1e3050" stroke-width="0.8"/>
+    <rect x="-14" y="-18" width="28" height="34" rx="3" fill="#181818" stroke="#252525" stroke-width="0.6"/>
+    <rect x="-22" y="-55" width="10" height="4" rx="1" fill="#8a1515" opacity="0.95"/>
+    <rect x="12" y="-55" width="10" height="4" rx="1" fill="#8a1515" opacity="0.95"/>
+    <rect x="-22" y="51" width="10" height="4" rx="1" fill="#e8ff47"/>
+    <rect x="12" y="51" width="10" height="4" rx="1" fill="#e8ff47"/>
+    <rect x="-31" y="-40" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+    <rect x="22" y="-40" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+    <g transform="translate(-26,33) rotate(-32)">
+      <rect x="-4.5" y="-8" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+      <line x1="0" y1="-8" x2="0" y2="-38" stroke="#e8ff47" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+    </g>
+    <g transform="translate(26,33) rotate(-32)">
+      <rect x="-4.5" y="-8" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+      <line x1="0" y1="-8" x2="0" y2="-38" stroke="#e8ff47" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+    </g>
+  </g>
+</svg>`;
+
+const SVG_POS_B = `<svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+  <line x1="10" y1="38" x2="310" y2="38" stroke="#ffffff" stroke-width="1.5" opacity="0.6"/>
+  <g transform="translate(160,148) rotate(180)">
+    <rect x="-26" y="-58" width="52" height="112" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.5"/>
+    <rect x="-24" y="-56" width="48" height="108" rx="11" fill="#1e1e1e" stroke="#2e2e2e" stroke-width="0.5"/>
+    <rect x="-15" y="-44" width="30" height="18" rx="3" fill="#141f2e" stroke="#1e3050" stroke-width="0.8"/>
+    <rect x="-15" y="24" width="30" height="18" rx="3" fill="#141f2e" stroke="#1e3050" stroke-width="0.8"/>
+    <rect x="-14" y="-18" width="28" height="34" rx="3" fill="#181818" stroke="#252525" stroke-width="0.6"/>
+    <rect x="-22" y="-55" width="10" height="4" rx="1" fill="#8a1515" opacity="0.95"/>
+    <rect x="12" y="-55" width="10" height="4" rx="1" fill="#8a1515" opacity="0.95"/>
+    <rect x="-22" y="51" width="10" height="4" rx="1" fill="#e8ff47"/>
+    <rect x="12" y="51" width="10" height="4" rx="1" fill="#e8ff47"/>
+    <rect x="-33" y="-40" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+    <rect x="24" y="-40" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+    <rect x="-33" y="26" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+    <rect x="24" y="26" width="9" height="16" rx="2.5" fill="#111" stroke="#404040" stroke-width="0.8"/>
+  </g>
+</svg>`;
+
 function showPositionScreen(pos, nextIdx) {
-  document.getElementById('pos-icon').textContent = pos;
   document.getElementById('pos-title').textContent = 'Move to Position ' + pos;
   document.getElementById('pos-subtitle').innerHTML = pos === 'A'
-    ? 'Position the vehicle <strong>facing the camera</strong> at a slight angle.<br>Shots 1–4 are exterior front angles.'
-    : 'Reposition the vehicle for <strong>rear and detail shots</strong>.<br>Shots 5–58 cover rear, sides, and interior.';
+    ? 'Angle the vehicle at <strong>45° to the wall</strong>. Turn the front wheels to full lock.'
+    : 'Position the vehicle <strong>square to the wall</strong>, front facing in. Wheels straight.';
+  document.getElementById('pos-diagram').innerHTML = pos === 'A' ? SVG_POS_A : SVG_POS_B;
   document.getElementById('btn-pos-ready').onclick = () => {
     previousPosition = pos;
     showScreen('list');
