@@ -129,20 +129,20 @@
   /* List scroll */
   .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
-  /* Position divider */
+
+  .list-pos-badge {
+    font-family:'Syne',sans-serif; font-size:11px; font-weight:800;
+    letter-spacing:2px; text-transform:uppercase;
+    white-space:nowrap; color:var(--white);
+  }
+  .list-pos-label { font-size:12px; color:var(--muted); }
   .list-pos-divider {
     display:flex; align-items:center; gap:12px;
     padding:10px 20px; background:var(--surface);
     border-bottom:1px solid var(--border);
+    border-top:1px solid var(--border);
     flex-shrink:0;
   }
-  .list-pos-badge {
-    font-family:'Syne',sans-serif; font-size:11px; font-weight:800;
-    letter-spacing:1px; padding:4px 12px; border-radius:100px;
-    white-space:nowrap;
-    background:rgba(255,255,255,0.07); color:var(--muted);
-  }
-  .list-pos-label { font-size:12px; color:var(--muted); }
 
   /* Shot row */
   .list-item {
@@ -175,6 +175,21 @@
   .status-pill.failed { background:var(--red-dim); color:var(--red); }
   .btn-reupload { font-size:10px; font-weight:700; color:var(--red); background:transparent; border:1px solid var(--red); border-radius:100px; padding:2px 8px; cursor:pointer; }
 
+  /* ══ POSITION ══ */
+  #screen-position { background:var(--bg); align-items:center; justify-content:center; text-align:center; padding:40px; }
+  .pos-icon {
+    width:80px; height:80px; border-radius:16px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-size:32px; font-weight:800;
+    margin-bottom:24px; background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12); color:var(--white); letter-spacing:2px;
+  }
+  .pos-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:12px; color:var(--white); }
+  .pos-subtitle { font-size:15px; color:var(--muted); line-height:1.6; max-width:300px; margin-bottom:48px; }
+  .pos-subtitle strong { color:var(--white); }
+  .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; }
+  .btn-pos-ready:active { opacity:0.9; }
+
   /* ══ CAMERA ══ */
   #screen-camera { background:#000; overflow:hidden; }
   #camera-video { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100vh * 4 / 3)); height:min(100vh,calc(100vw * 3 / 4)); object-fit:cover; background:#000; }
@@ -185,9 +200,7 @@
   .cam-shot-counter { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--muted); letter-spacing:1px; }
   .cam-shot-counter span { color:var(--white); }
   .cam-shot-name { flex:1; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--white); text-align:center; }
-  .cam-badge-pos { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:1px; padding:4px 10px; border-radius:100px; }
-  .cam-badge-pos.pos-a { background:rgba(71,184,255,0.2); color:var(--pos-a); }
-  .cam-badge-pos.pos-b { background:rgba(255,159,71,0.2); color:var(--pos-b); }
+  .cam-badge-pos { font-family:'Syne',sans-serif; font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--white); opacity:0.7; }
 
   /* Upload warning */
   .upload-warning { position:absolute; top:calc(var(--safe-top) + 44px); right:70px; background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:3px 10px; border-radius:100px; z-index:15; display:none; }
@@ -286,7 +299,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.7</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.9</div>
 </div>
 
 <!-- SETTINGS -->
@@ -342,6 +355,14 @@
   </div>
 
   <div class="list-scroll" id="list-scroll"></div>
+</div>
+
+<!-- POSITION -->
+<div class="screen" id="screen-position">
+  <div class="pos-icon" id="pos-icon">A</div>
+  <div class="pos-title" id="pos-title">Move to Position A</div>
+  <div class="pos-subtitle" id="pos-subtitle"></div>
+  <button class="btn-pos-ready" id="btn-pos-ready">Vehicle Ready — Let's Go</button>
 </div>
 
 <!-- CAMERA -->
@@ -411,7 +432,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.7
+// SNAP IT v5.9
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -455,24 +476,31 @@ function showScreen(id) {
 }
 
 // ── Orientation: portrait = list, landscape = camera ──
+let suppressOrientation = false;
+
 function handleOrientation() {
+  if (suppressOrientation) return;
   const isLandscape = window.innerWidth > window.innerHeight;
   const activeScreen = document.querySelector('.screen.active')?.id;
 
-  // Only swap between list and camera — don't interfere with home/settings/retake/complete
+  // Only swap between list and camera on ACTUAL device rotation
   if (!['screen-list', 'screen-camera'].includes(activeScreen)) return;
 
   if (isLandscape && activeScreen === 'screen-list') {
+    suppressOrientation = true;
     showScreen('camera');
     ensureCamera();
+    setTimeout(() => { suppressOrientation = false; }, 500);
   } else if (!isLandscape && activeScreen === 'screen-camera') {
+    suppressOrientation = true;
     showScreen('list');
     refreshList();
+    setTimeout(() => { suppressOrientation = false; }, 500);
   }
 }
 
-window.addEventListener('resize', handleOrientation);
-window.addEventListener('orientationchange', () => setTimeout(handleOrientation, 150));
+// Only listen to orientationchange — not resize (resize fires on every screen change)
+window.addEventListener('orientationchange', () => setTimeout(handleOrientation, 200));
 
 // ── Credentials ──
 function loadCredentials() {
@@ -519,13 +547,26 @@ document.getElementById('btn-start').addEventListener('click', () => {
   currentLens = -1; cameraMap = {};
   document.getElementById('list-reg').textContent = reg;
   startRetryTimer();
-
-  // Always start in portrait = shot list
-  showScreen('list');
-  refreshList();
-  // Pre-warm camera in background
   warmCamera();
+
+  // Show Position A prompt first, then go to list
+  showPositionScreen('A', 0);
 });
+
+// ── Show position screen ──
+function showPositionScreen(pos, nextIdx) {
+  document.getElementById('pos-icon').textContent = pos;
+  document.getElementById('pos-title').textContent = 'Move to Position ' + pos;
+  document.getElementById('pos-subtitle').innerHTML = pos === 'A'
+    ? 'Position the vehicle <strong>facing the camera</strong> at a slight angle.<br>Shots 1–4 are exterior front angles.'
+    : 'Reposition the vehicle for <strong>rear and detail shots</strong>.<br>Shots 5–58 cover rear, sides, and interior.';
+  document.getElementById('btn-pos-ready').onclick = () => {
+    previousPosition = pos;
+    showScreen('list');
+    refreshList();
+  };
+  showScreen('position');
+}
 
 // ── Find next untaken, unskipped shot (searches from beginning) ──
 function findNextUntaken(fromIdx) {
@@ -577,7 +618,7 @@ function updateCameraUI(idx) {
   document.getElementById('hud-name').textContent = shot.name;
   const posEl = document.getElementById('hud-pos');
   posEl.textContent = 'POS ' + shot.position;
-  posEl.className = 'cam-badge-pos pos-' + shot.position.toLowerCase();
+  posEl.className = 'cam-badge-pos';
   const tag = document.getElementById('desc-tag');
   if (shot.mandatory === true) { tag.textContent = '● REQUIRED'; tag.className = 'cam-tag required'; }
   else { tag.textContent = '○ OPTIONAL'; tag.className = 'cam-tag optional'; }
@@ -711,7 +752,8 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
 // ── Retake ──
 document.getElementById('btn-retake').addEventListener('click', () => {
   capturedBlob = null;
-  // Always go to camera — whether retaking a new shot or replacing a reviewed one
+  // Go back to camera for same shot — do NOT advance currentIdx
+  updateCameraUI(currentIdx);
   showScreen('camera');
 });
 
@@ -742,13 +784,14 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
   currentIdx = nextIdx;
   updateCameraUI(currentIdx);
 
-  // Landscape = stay in camera, portrait = go to list
-  if (window.innerWidth > window.innerHeight) {
-    const requestedLens = SHOTS[currentIdx].lens || 1.0;
-    updateLensButtons(requestedLens);
-    if (requestedLens !== currentLens || !stream) { currentLens = requestedLens; startCamera(requestedLens); }
-  } else {
-    showScreen('list'); refreshList();
+  // Always go back to camera to shoot the next shot
+  // handleOrientation will switch to list if user rotates to portrait
+  const requestedLens = SHOTS[currentIdx].lens || 1.0;
+  updateLensButtons(requestedLens);
+  showScreen('camera');
+  if (requestedLens !== currentLens || !stream) {
+    currentLens = requestedLens;
+    startCamera(requestedLens);
   }
 });
 
@@ -825,7 +868,7 @@ function refreshList() {
       const divider = document.createElement('div');
       divider.className = 'list-pos-divider';
       const badge = document.createElement('div');
-      badge.className = `list-pos-badge pos-${shot.position.toLowerCase()}`;
+      badge.className = 'list-pos-badge';
       badge.textContent = `POSITION ${shot.position}`;
       const label = document.createElement('div');
       label.className = 'list-pos-label';
