@@ -326,6 +326,33 @@
     transition: width 0.4s ease;
   }
 
+  /* Lens selector buttons — inside left col */
+  .lens-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .lens-btn {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+    border-radius: 100px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .lens-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0a;
+  }
+  .lens-btn:active { transform: scale(0.93); }
+
   /* Required/optional badge — below HUD, clear of Dynamic Island */
   .cam-mandatory-tag, .cam-optional-tag {
     position: absolute;
@@ -402,14 +429,25 @@
   .cam-shutter.capturing { background: var(--accent); }
   .cam-shutter.capturing::after { background: var(--accent); }
 
-  /* Overlay opacity slider — LEFT side, vertical, clear of Dynamic Island */
-  .cam-overlay-ctrl {
+  /* Left side column — lens buttons + overlay slider together */
+  .cam-left-col {
     position: absolute;
-    left: max(20px, env(safe-area-inset-left, 20px));
+    left: max(16px, env(safe-area-inset-left, 16px));
     top: 50%;
     transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 12;
+  }
+  .cam-left-divider {
+    width: 24px; height: 1px;
+    background: rgba(255,255,255,0.15);
+  }
+  /* Overlay opacity slider */
+  .cam-overlay-ctrl {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
     padding: 10px 6px;
     background: rgba(0,0,0,0.35);
     backdrop-filter: blur(8px);
@@ -421,7 +459,7 @@
     appearance: slider-vertical;
     writing-mode: vertical-lr;
     direction: rtl;
-    width: 28px; height: 100px;
+    width: 28px; height: 80px;
     cursor: pointer;
     accent-color: var(--accent);
     opacity: 0.85;
@@ -679,7 +717,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.7</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v3.1</div>
 </div>
 
 <!-- ── SCREEN: SETTINGS ── -->
@@ -726,13 +764,21 @@
     <div class="cam-desc-text" id="desc-text">Description goes here.</div>
   </div>
 
-  <!-- Required/Optional badge — top left, standalone -->
+  <!-- Required/Optional badge -->
   <div class="cam-mandatory-tag" id="desc-tag">● REQUIRED</div>
 
-  <!-- Overlay slider — LEFT edge, vertical -->
-  <div class="cam-overlay-ctrl">
-    <input type="range" id="overlay-opacity" min="0" max="70" value="38" step="1">
-    <div class="cam-overlay-label">Overlay</div>
+  <!-- Left column: lens selector + divider + overlay slider -->
+  <div class="cam-left-col">
+    <div class="lens-selector" id="lens-selector">
+      <button class="lens-btn" id="lens-btn-05" data-lens="0.5">0.5×</button>
+      <button class="lens-btn" id="lens-btn-1" data-lens="1">1×</button>
+      <button class="lens-btn" id="lens-btn-2" data-lens="2">2×</button>
+    </div>
+    <div class="cam-left-divider"></div>
+    <div class="cam-overlay-ctrl">
+      <input type="range" id="overlay-opacity" min="0" max="70" value="38" step="1">
+      <div class="cam-overlay-label">Overlay</div>
+    </div>
   </div>
 
   <!-- Shutter + Back + Skip stacked on RIGHT edge -->
@@ -901,8 +947,19 @@ async function buildCameraMap() {
 
   console.log('All video devices:', videoDevices.map(d => d.label));
 
-  // Match directly on zoom prefix in label — works across all iPhone models
-  for (const d of videoDevices) {
+  // Strictly exclude front/selfie cameras first
+  const rearCameras = videoDevices.filter(d => {
+    const label = d.label.toLowerCase();
+    return !label.includes('front') &&
+           !label.includes('selfie') &&
+           !label.includes('facetime') &&
+           !label.includes('user');
+  });
+
+  console.log('Rear cameras:', rearCameras.map(d => d.label));
+
+  // Match on zoom prefix — works across all iPhone models
+  for (const d of rearCameras) {
     const label = d.label.toLowerCase();
     if (label.startsWith('0.5x'))      { cameraMap[0.5] = d.deviceId; }
     else if (label.startsWith('1x'))   { cameraMap[1.0] = d.deviceId; }
@@ -910,23 +967,31 @@ async function buildCameraMap() {
     else if (label.startsWith('3x'))   { cameraMap[3.0] = d.deviceId; }
   }
 
-  // Fallback: if map is empty, assign whatever we have to all slots
-  if (Object.keys(cameraMap).length === 0 && videoDevices.length > 0) {
-    const fallbackId = videoDevices[0].deviceId;
-    cameraMap[0.5] = fallbackId;
-    cameraMap[1.0] = fallbackId;
-    cameraMap[2.0] = fallbackId;
+  // If still empty, fall back to facingMode environment (guaranteed rear)
+  if (Object.keys(cameraMap).length === 0) {
+    console.warn('No rear cameras identified by label — using facingMode fallback');
+    // Leave map empty — startCamera will use facingMode: environment
   }
 
-  // Fill any missing slots with the closest available
+  // Fill any missing slots with the closest available rear camera
   const slots = [0.5, 1.0, 2.0];
   for (const slot of slots) {
-    if (!cameraMap[slot]) {
-      cameraMap[slot] = cameraMap[findClosestLens(slot)] || Object.values(cameraMap)[0];
+    if (!cameraMap[slot] && Object.keys(cameraMap).length > 0) {
+      const closest = findClosestInMap(slot);
+      cameraMap[slot] = closest;
     }
   }
 
-  console.log('Camera map:', cameraMap);
+  console.log('Final camera map:', cameraMap);
+}
+
+function findClosestInMap(requested) {
+  const available = Object.keys(cameraMap).map(Number).sort((a,b) => a-b);
+  if (available.length === 0) return null;
+  const closest = available.reduce((prev, curr) =>
+    Math.abs(curr - requested) < Math.abs(prev - requested) ? curr : prev
+  );
+  return cameraMap[closest];
 }
 
 function findClosestLens(requested) {
@@ -949,7 +1014,7 @@ async function startCamera(requestedLens = 1.0) {
     // First time — request any rear camera to get permission, then build map
     if (Object.keys(cameraMap).length === 0) {
       const tempStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } }, audio: false
+        video: { facingMode: { exact: 'environment' } }, audio: false
       });
       tempStream.getTracks().forEach(t => t.stop());
       await buildCameraMap();
@@ -957,12 +1022,13 @@ async function startCamera(requestedLens = 1.0) {
 
     // Find the best matching lens
     const closestLens = findClosestLens(requestedLens);
-    const deviceId = closestLens !== null ? cameraMap[closestLens] : null;
+    const deviceId = (closestLens !== null && cameraMap[closestLens]) ? cameraMap[closestLens] : null;
     currentLens = closestLens || requestedLens;
 
+    // If no deviceId found, use facingMode environment — always gets rear camera
     const videoConstraints = deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } }
-      : { facingMode: { ideal: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
+      : { facingMode: { exact: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
 
     stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 
@@ -1004,31 +1070,28 @@ async function startCamera(requestedLens = 1.0) {
   }
 }
 
+// ── Update lens button highlight ──
+function updateLensButtons(lens) {
+  const map = { 0.5: 'lens-btn-05', 1.0: 'lens-btn-1', 2.0: 'lens-btn-2' };
+  document.querySelectorAll('.lens-btn').forEach(b => b.classList.remove('active'));
+  const activeId = map[lens] || map[1.0];
+  const activeBtn = document.getElementById(activeId);
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+// Manual lens button taps
+document.querySelectorAll('.lens-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const lens = parseFloat(btn.dataset.lens);
+    currentLens = -1; // force switch even if same lens
+    startCamera(lens);
+  });
+});
+
 // ── Lens indicator toast ──
 function showLensIndicator(lens) {
-  let el = document.getElementById('lens-indicator');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'lens-indicator';
-    el.style.cssText = `
-      position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px);
-      color: #e8ff47;
-      font-family: 'Syne', sans-serif;
-      font-size: 28px; font-weight: 800;
-      padding: 16px 32px; border-radius: 16px;
-      z-index: 9999; pointer-events: none;
-      transition: opacity 0.4s;
-    `;
-    document.body.appendChild(el);
-  }
-  const label = lens === 0.5 ? '0.5×' : lens === 2.0 ? '2×' : '1×';
-  el.textContent = label;
-  el.style.opacity = '1';
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => { el.style.opacity = '0'; }, 1000);
+  // Just update the button highlight — no centre flash
+  updateLensButtons(lens);
 }
 
 function startCameraForShot(idx) {
@@ -1038,6 +1101,8 @@ function startCameraForShot(idx) {
   checkOrientation();
   const shot = SHOTS[idx];
   const requestedLens = shot ? (shot.lens || 1.0) : 1.0;
+  // Always update button highlight for current shot
+  updateLensButtons(requestedLens);
   // Only switch camera if lens has changed
   if (requestedLens !== currentLens || !stream) {
     startCamera(requestedLens);
