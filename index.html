@@ -58,6 +58,37 @@
   .token-input.saved { border-color:var(--green); }
   .token-hint { font-size:11px; color:var(--green); align-self:flex-start; min-height:16px; }
   .btn-start { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:17px; font-weight:700; padding:18px 56px; cursor:pointer; transition:transform 0.1s; }
+  .home-connectivity {
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:20px;
+    padding:8px 16px; border-radius:100px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .conn-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--muted); flex-shrink:0;
+    transition:background 0.3s;
+  }
+  .conn-dot.online { background:var(--green); box-shadow:0 0 6px rgba(71,255,138,0.5); }
+  .conn-dot.offline { background:var(--red); box-shadow:0 0 6px rgba(255,71,87,0.4); }
+  .conn-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; }
+  .conn-label.online { color:var(--green); }
+  .conn-label.offline { color:var(--red); }
+
+  .home-tip {
+    max-width:320px; margin-bottom:32px;
+    padding:16px 20px; border-radius:14px;
+    background:rgba(232,255,71,0.05);
+    border:1px solid rgba(232,255,71,0.12);
+    text-align:center;
+  }
+  .home-tip-label {
+    font-family:'Syne',sans-serif; font-size:9px; font-weight:800;
+    letter-spacing:2px; color:var(--accent); margin-bottom:6px;
+  }
+  .home-tip-text { font-size:13px; color:rgba(255,255,255,0.75); line-height:1.55; }
+
   .btn-start:active { transform:scale(0.96); }
   .btn-settings { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'DM Sans',sans-serif; font-size:13px; padding:10px 24px; cursor:pointer; margin-top:12px; }
   .btn-settings:active { color:var(--white); border-color:var(--white); }
@@ -253,8 +284,9 @@
 
   /* ══ COMPLETE ══ */
   #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:32px 40px; text-align:center; gap:16px; overflow-y:auto; }
-  .complete-icon { width:72px; height:72px; background:var(--accent-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; }
-  .complete-icon.warning { background:rgba(255,71,87,0.12); }
+  .complete-icon { width:72px; height:72px; background:#0a0a0a; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; border:2px solid var(--accent); color:var(--accent); font-family:'Syne',sans-serif; font-weight:800; }
+  .complete-icon.warning { border-color:var(--red); color:var(--red); background:#0a0a0a; }
+  .complete-icon.uploading { border-color:var(--accent); color:var(--accent); }
   .complete-success { display:none; font-size:13px; color:var(--green); font-weight:600; padding:8px 20px; background:rgba(71,255,138,0.08); border:1px solid rgba(71,255,138,0.2); border-radius:100px; }
   .complete-success.visible { display:block; }
   .complete-warning { display:none; align-items:flex-start; gap:12px; background:var(--red-dim); border:1px solid rgba(255,71,87,0.25); border-radius:14px; padding:14px 16px; text-align:left; max-width:340px; }
@@ -262,22 +294,22 @@
   .complete-warning-icon { font-size:20px; flex-shrink:0; margin-top:2px; }
   .complete-warning-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--red); margin-bottom:4px; }
   .complete-warning-sub { font-size:12px; color:var(--muted); line-height:1.5; }
-  .btn-complete-save { display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid var(--border); color:var(--white); cursor:pointer; flex-shrink:0; }
-  .btn-complete-save:active { background:rgba(255,255,255,0.15); }
+  .btn-complete-save { display:flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.3); color:var(--white); cursor:pointer; flex-shrink:0; }
+  .btn-complete-save svg { display:block; width:20px; height:20px; }
+  .btn-complete-save:active { background:rgba(255,255,255,0.18); }
 
   .upload-progress-wrap { width:100%; max-width:320px; display:none; flex-direction:column; align-items:center; gap:8px; }
   .upload-progress-wrap.visible { display:flex; }
   .upload-progress-bar-track { width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
   .upload-progress-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; width:0%; }
   .upload-progress-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; }
-  .btn-finish-delete { background:transparent; border:1.5px solid rgba(255,71,87,0.5); color:var(--red); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
+  .btn-finish-delete { background:transparent; border:1.5px solid rgba(255,71,87,0.5); color:var(--red); border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 36px; cursor:pointer; }
   .btn-finish-delete:active { background:var(--red-dim); }
   .btn-finish-delete-warning { font-size:11px; color:var(--muted); margin-top:8px; max-width:280px; line-height:1.4; }
   .complete-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:8px; }
   .complete-sub { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:24px; max-width:340px; }
-  .complete-stats { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-  .complete-stat { flex:1; padding:16px 12px; text-align:center; border-right:1px solid var(--border); background:var(--surface); }
-  .complete-stat:last-child { border-right:none; }
+  .complete-stats { display:flex; gap:28px; margin-bottom:0; }
+  .complete-stat { text-align:center; min-width:70px; }
   .complete-stat-num { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--accent); }
   .complete-stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
   .complete-warning {
@@ -317,10 +349,16 @@
   <div class="home-bg"></div>
   <div class="home-logo">Snap<span>It</span></div>
   <div class="home-tagline">Vehicle Photography Guide</div>
-  <div class="home-stats">
-    <div class="home-stat"><div class="home-stat-num" id="stat-total">58</div><div class="home-stat-label">Shots</div></div>
-    <div class="home-stat"><div class="home-stat-num" id="stat-mandatory">—</div><div class="home-stat-label">Required</div></div>
-    <div class="home-stat"><div class="home-stat-num" id="stat-optional">—</div><div class="home-stat-label">Optional</div></div>
+  <!-- Connectivity indicator -->
+  <div class="home-connectivity" id="home-connectivity">
+    <div class="conn-dot" id="conn-dot"></div>
+    <div class="conn-label" id="conn-label">Checking connection…</div>
+  </div>
+
+  <!-- Tip of the day -->
+  <div class="home-tip" id="home-tip">
+    <div class="home-tip-label">TIP</div>
+    <div class="home-tip-text" id="home-tip-text"></div>
   </div>
   <div class="token-wrap">
     <div class="token-label">Vehicle Registration</div>
@@ -331,7 +369,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.8</div>
 </div>
 
 <!-- SETTINGS -->
@@ -449,7 +487,7 @@
 <!-- COMPLETE -->
 <div class="screen" id="screen-complete">
   <div class="complete-icon" id="complete-icon">✓</div>
-  <div class="complete-title" id="complete-title">Shoot Complete!</div>
+  <div class="complete-title" id="complete-title">Shot List Complete</div>
 
   <div class="complete-stats">
     <div class="complete-stat"><div class="complete-stat-num" id="done-captured">0</div><div class="complete-stat-label">Captured</div></div>
@@ -492,7 +530,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v6.6
+// SNAP IT v6.8
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -521,9 +559,6 @@ async function loadShots() {
   try {
     const r = await fetch('shots.json');
     SHOTS = await r.json();
-    document.getElementById('stat-total').textContent = SHOTS.length;
-    document.getElementById('stat-mandatory').textContent = SHOTS.filter(s => s.mandatory).length;
-    document.getElementById('stat-optional').textContent = SHOTS.filter(s => !s.mandatory).length;
     document.getElementById('hud-total').textContent = SHOTS.length;
     // ls-remaining removed from DOM
   } catch(e) { console.error('Could not load shots.json', e); }
@@ -1127,7 +1162,7 @@ function updateCompleteScreen() {
 
   if (pendingCount > 0) {
     // Actively uploading — show progress bar
-    icon.textContent = '⏫'; icon.className = 'complete-icon';
+    icon.textContent = '✓'; icon.className = 'complete-icon uploading';
     title.textContent = 'Uploading…';
     warning.classList.remove('visible'); success.classList.remove('visible');
     progressWrap.classList.add('visible');
@@ -1139,7 +1174,7 @@ function updateCompleteScreen() {
   } else if (failedCount > 0) {
     // Some failed — show warning, hide progress
     icon.textContent = '⚠'; icon.className = 'complete-icon warning';
-    title.textContent = 'Shoot Complete';
+    title.textContent = 'Shot List Complete';
     warning.classList.add('visible'); success.classList.remove('visible');
     progressWrap.classList.remove('visible');
     document.getElementById('complete-warning-title').textContent =
@@ -1149,7 +1184,7 @@ function updateCompleteScreen() {
   } else {
     // All done — success state
     icon.textContent = '✓'; icon.className = 'complete-icon';
-    title.textContent = 'Shoot Complete!';
+    title.textContent = 'Shot List Complete';
     warning.classList.remove('visible'); success.classList.add('visible');
     progressWrap.classList.remove('visible');
     progressFill.style.width = '100%';
@@ -1313,6 +1348,54 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 
 loadShots();
 loadCredentials();
+initHomeTip();
+initConnectivity();
+
+// ── Tips ──
+const TIPS = [
+  'Make sure the vehicle is clean and dry before starting the shoot.',
+  'Overcast light gives the most even results — avoid shooting in harsh direct sun.',
+  'Check all doors, windows and the boot are closed before exterior shots.',
+  'Ensure the number plate is clean and clearly visible.',
+  'Remove any personal items visible through the windows before interior shots.',
+  'For alloy shots, turn the wheel so the brake caliper is hidden behind the spokes.',
+  'Turn the infotainment screen on before interior shots.',
+  'Check your Cloudinary connection before starting a long shoot.',
+  'Keep your phone level — use the horizon line in the viewfinder.',
+  'For detail shots, get as close as possible and let the camera focus.',
+  'Shoot in landscape mode — the app will remind you if you rotate.',
+  'Clean the camera lens before starting for sharper images.',
+  'Consistent background makes photos look more professional.',
+  'Take your time with the framing overlay — it is worth getting right.',
+  'Check the shot list after every few shots to make sure uploads are going through.',
+];
+
+function initHomeTip() {
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  document.getElementById('home-tip-text').textContent = tip;
+}
+
+// ── Connectivity ──
+function initConnectivity() {
+  updateConnectivity();
+  window.addEventListener('online', updateConnectivity);
+  window.addEventListener('offline', updateConnectivity);
+}
+
+function updateConnectivity() {
+  const dot = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  if (!dot || !label) return;
+  if (navigator.onLine) {
+    dot.className = 'conn-dot online';
+    label.className = 'conn-label online';
+    label.textContent = 'Connected — uploads will work';
+  } else {
+    dot.className = 'conn-dot offline';
+    label.className = 'conn-label offline';
+    label.textContent = 'No connection — uploads will queue';
+  }
+}
 </script>
 </body>
 </html>
