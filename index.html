@@ -679,7 +679,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v2.7</div>
 </div>
 
 <!-- ── SCREEN: SETTINGS ── -->
@@ -900,34 +900,33 @@ async function buildCameraMap() {
   cameraMap = {};
 
   console.log('All video devices:', videoDevices.map(d => d.label));
+
+  // Match directly on zoom prefix in label — works across all iPhone models
   for (const d of videoDevices) {
     const label = d.label.toLowerCase();
-    // Only rear cameras
-    if (!label.includes('back') && !label.includes('rear') && !label.includes('0')) continue;
-    if (label.includes('ultra') || label.includes('0.5') || label.includes('wide')) {
-      cameraMap[0.5] = d.deviceId;
-    } else if (label.includes('telephoto') || label.includes('2x') || label.includes(' 2 ') || label.includes('dual')) {
-      cameraMap[2.0] = d.deviceId;
-    } else if (label.includes('back') || label.includes('rear')) {
-      // Default rear = 1x if not already assigned
-      if (!cameraMap[1.0]) cameraMap[1.0] = d.deviceId;
+    if (label.startsWith('0.5x'))      { cameraMap[0.5] = d.deviceId; }
+    else if (label.startsWith('1x'))   { cameraMap[1.0] = d.deviceId; }
+    else if (label.startsWith('2x'))   { cameraMap[2.0] = d.deviceId; }
+    else if (label.startsWith('3x'))   { cameraMap[3.0] = d.deviceId; }
+  }
+
+  // Fallback: if map is empty, assign whatever we have to all slots
+  if (Object.keys(cameraMap).length === 0 && videoDevices.length > 0) {
+    const fallbackId = videoDevices[0].deviceId;
+    cameraMap[0.5] = fallbackId;
+    cameraMap[1.0] = fallbackId;
+    cameraMap[2.0] = fallbackId;
+  }
+
+  // Fill any missing slots with the closest available
+  const slots = [0.5, 1.0, 2.0];
+  for (const slot of slots) {
+    if (!cameraMap[slot]) {
+      cameraMap[slot] = cameraMap[findClosestLens(slot)] || Object.values(cameraMap)[0];
     }
   }
 
-  // Fallback: if we only found one camera, assign it to all
-  if (Object.keys(cameraMap).length === 1) {
-    const onlyId = Object.values(cameraMap)[0];
-    cameraMap[0.5] = cameraMap[0.5] || onlyId;
-    cameraMap[1.0] = cameraMap[1.0] || onlyId;
-    cameraMap[2.0] = cameraMap[2.0] || onlyId;
-  }
-
   console.log('Camera map:', cameraMap);
-
-  // Show diagnostic info as toast so we can see it on device
-  const labels = videoDevices.map(d => d.label || 'unnamed').join(' | ');
-  const mapped = Object.entries(cameraMap).map(([k,v]) => `${k}x:${v.slice(-4)}`).join(', ');
-  showToast(`Cameras: ${videoDevices.length} found. Map: ${mapped}`, 'success');
 }
 
 function findClosestLens(requested) {
