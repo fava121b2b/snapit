@@ -77,17 +77,11 @@
   .conn-label.offline { color:var(--red); }
 
   .home-tip {
-    max-width:320px; margin-bottom:32px;
-    padding:16px 20px; border-radius:14px;
-    background:rgba(232,255,71,0.05);
-    border:1px solid rgba(232,255,71,0.12);
-    text-align:center;
+    max-width:300px; margin-bottom:32px;
+    font-size:13px; color:var(--muted);
+    line-height:1.6; text-align:center;
+    font-style:italic;
   }
-  .home-tip-label {
-    font-family:'Syne',sans-serif; font-size:9px; font-weight:800;
-    letter-spacing:2px; color:var(--accent); margin-bottom:6px;
-  }
-  .home-tip-text { font-size:13px; color:rgba(255,255,255,0.75); line-height:1.55; }
 
   .btn-start:active { transform:scale(0.96); }
   .btn-settings { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'DM Sans',sans-serif; font-size:13px; padding:10px 24px; cursor:pointer; margin-top:12px; }
@@ -356,10 +350,7 @@
   </div>
 
   <!-- Tip of the day -->
-  <div class="home-tip" id="home-tip">
-    <div class="home-tip-label">TIP</div>
-    <div class="home-tip-text" id="home-tip-text"></div>
-  </div>
+  <div class="home-tip" id="home-tip-text"></div>
   <div class="token-wrap">
     <div class="token-label">Vehicle Registration</div>
     <input class="token-input" id="reg-number" type="text" placeholder="e.g. AP15XKU"
@@ -369,7 +360,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.8</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.0</div>
 </div>
 
 <!-- SETTINGS -->
@@ -530,7 +521,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v6.8
+// SNAP IT v7.0
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -1346,11 +1337,6 @@ if ('wakeLock' in navigator) {
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
-loadShots();
-loadCredentials();
-initHomeTip();
-initConnectivity();
-
 // ── Tips ──
 const TIPS = [
   'Make sure the vehicle is clean and dry before starting the shoot.',
@@ -1372,7 +1358,7 @@ const TIPS = [
 
 function initHomeTip() {
   const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-  document.getElementById('home-tip-text').textContent = tip;
+  document.getElementById('home-tip-text').textContent = '💡 ' + tip;
 }
 
 // ── Connectivity ──
@@ -1382,20 +1368,35 @@ function initConnectivity() {
   window.addEventListener('offline', updateConnectivity);
 }
 
-function updateConnectivity() {
+async function updateConnectivity() {
   const dot = document.getElementById('conn-dot');
   const label = document.getElementById('conn-label');
   if (!dot || !label) return;
-  if (navigator.onLine) {
-    dot.className = 'conn-dot online';
-    label.className = 'conn-label online';
-    label.textContent = 'Connected — uploads will work';
-  } else {
+  if (!navigator.onLine) {
     dot.className = 'conn-dot offline';
     label.className = 'conn-label offline';
     label.textContent = 'No connection — uploads will queue';
+    return;
+  }
+  try {
+    fetch('https://api.cloudinary.com/v1_1/check', {
+      method: 'HEAD', mode: 'no-cors', cache: 'no-store'
+    });
+    dot.className = 'conn-dot online';
+    label.className = 'conn-label online';
+    label.textContent = 'Connected — uploads will work';
+  } catch(e) {
+    dot.className = 'conn-dot online';
+    label.className = 'conn-label online';
+    label.textContent = 'Connected — uploads will work';
   }
 }
+
+// ── Init ──
+loadShots();
+loadCredentials();
+initHomeTip();
+initConnectivity();
 </script>
 </body>
 </html>
