@@ -32,8 +32,9 @@
     width:100vw; height:100vh; height:-webkit-fill-available;
     display:none; flex-direction:column;
     padding-top:var(--safe-top); padding-bottom:var(--safe-bottom);
+    z-index:1;
   }
-  .screen.active { display:flex; }
+  .screen.active { display:flex; z-index:10; }
 
   /* ══ HOME ══ */
   #screen-home { background:var(--bg); align-items:center; justify-content:center; }
@@ -286,7 +287,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.2</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.3</div>
 </div>
 
 <!-- SETTINGS -->
@@ -412,7 +413,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.2
+// SNAP IT v5.3
 // ══════════════════════════════════════════
 
 let SHOTS = [];
