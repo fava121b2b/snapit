@@ -180,7 +180,7 @@
   .pos-title { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; margin-bottom:8px; color:var(--white); }
   .pos-subtitle { font-size:14px; color:var(--muted); line-height:1.6; max-width:320px; margin-bottom:20px; }
   .pos-subtitle strong { color:var(--white); }
-  .pos-diagram { width:100%; max-width:320px; margin-bottom:24px; }
+  .pos-diagram { width:100%; max-width:460px; margin-bottom:24px; }
   .pos-diagram svg { width:100%; height:auto; display:block; }
   .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; }
   .btn-pos-ready:active { opacity:0.9; }
@@ -252,18 +252,44 @@
   .btn-save:active { opacity:0.9; }
 
   /* ══ COMPLETE ══ */
-  #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:40px; text-align:center; }
-  .complete-icon { width:90px; height:90px; background:var(--accent-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; margin-bottom:28px; }
-  .complete-title { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; margin-bottom:10px; }
-  .complete-sub { font-size:15px; color:var(--muted); line-height:1.6; margin-bottom:40px; }
-  .complete-stats { display:flex; gap:16px; margin-bottom:40px; }
-  .complete-stat { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; text-align:center; }
-  .complete-stat-num { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--accent); }
-  .complete-stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
-  .complete-btns { display:flex; gap:12px; }
-  .btn-view-list { padding:16px 28px; border-radius:100px; border:1.5px solid var(--border); background:transparent; color:var(--white); font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
-  .btn-view-list:active { background:rgba(255,255,255,0.05); }
-  .btn-new-shoot { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 32px; cursor:pointer; }
+  #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:32px 40px; text-align:center; gap:0; overflow-y:auto; }
+  .complete-icon { width:72px; height:72px; background:var(--accent-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:20px; }
+  .complete-icon.warning { background:rgba(255,71,87,0.12); }
+  .complete-warning { display:none; align-items:flex-start; gap:12px; background:var(--red-dim); border:1px solid rgba(255,71,87,0.25); border-radius:14px; padding:14px 16px; margin-bottom:20px; text-align:left; max-width:340px; }
+  .complete-warning.visible { display:flex; }
+  .complete-warning-icon { font-size:20px; flex-shrink:0; margin-top:2px; }
+  .complete-warning-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--red); margin-bottom:4px; }
+  .complete-warning-sub { font-size:12px; color:var(--muted); line-height:1.5; }
+  .btn-complete-save { display:flex; align-items:center; justify-content:center; gap:6px; width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid var(--border); color:var(--white); cursor:pointer; flex-shrink:0; }
+  .btn-complete-save:active { background:rgba(255,255,255,0.15); }
+  .complete-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:8px; }
+  .complete-sub { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:24px; max-width:340px; }
+  .complete-stats { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .complete-stat { flex:1; padding:16px 12px; text-align:center; border-right:1px solid var(--border); background:var(--surface); }
+  .complete-stat:last-child { border-right:none; }
+  .complete-stat-num { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--accent); }
+  .complete-stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  .complete-warning {
+    display:none; align-items:flex-start; gap:12px;
+    background:var(--red-dim); border:1px solid rgba(255,71,87,0.3);
+    border-radius:14px; padding:14px 16px; margin-bottom:24px;
+    text-align:left; max-width:360px; width:100%;
+  }
+  .complete-warning.visible { display:flex; }
+  .complete-warning-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+  .complete-warning-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--red); margin-bottom:3px; }
+  .complete-warning-sub { font-size:12px; color:var(--muted); line-height:1.5; }
+  .complete-btns { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .btn-complete-save {
+    display:flex; align-items:center; gap:8px;
+    padding:14px 24px; border-radius:100px;
+    border:1.5px solid var(--border);
+    background:rgba(255,255,255,0.06);
+    color:var(--white); font-family:'Syne',sans-serif;
+    font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .btn-complete-save:active { background:rgba(255,255,255,0.12); }
+  .btn-new-shoot { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; padding:14px 28px; cursor:pointer; white-space:nowrap; }
   .btn-new-shoot:active { opacity:0.9; }
 
   /* Flash */
@@ -294,7 +320,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.0</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.1</div>
 </div>
 
 <!-- SETTINGS -->
@@ -411,23 +437,37 @@
 
 <!-- COMPLETE -->
 <div class="screen" id="screen-complete">
-  <div class="complete-icon">✓</div>
-  <div class="complete-title">Shoot Complete!</div>
-  <div class="complete-sub" id="complete-sub">All shots captured.</div>
+  <div class="complete-icon" id="complete-icon">✓</div>
+  <div class="complete-title" id="complete-title">Shoot Complete!</div>
+  <div class="complete-sub" id="complete-sub">All photos captured successfully.</div>
+
   <div class="complete-stats">
     <div class="complete-stat"><div class="complete-stat-num" id="done-captured">0</div><div class="complete-stat-label">Captured</div></div>
     <div class="complete-stat"><div class="complete-stat-num" id="done-uploaded">0</div><div class="complete-stat-label">Uploaded</div></div>
     <div class="complete-stat"><div class="complete-stat-num" id="done-skipped">0</div><div class="complete-stat-label">Skipped</div></div>
   </div>
+
+  <div class="complete-warning" id="complete-warning">
+    <div class="complete-warning-icon">⚠</div>
+    <div class="complete-warning-text">
+      <div class="complete-warning-title" id="complete-warning-title">Some photos failed to upload</div>
+      <div class="complete-warning-sub">Connect to WiFi and use Save All to keep a local copy.</div>
+    </div>
+  </div>
+
   <div class="complete-btns">
+    <button class="btn-complete-save" id="btn-complete-save">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/></svg>
+      Save to Device
+    </button>
     <button class="btn-view-list" id="btn-view-list-complete">View List</button>
-    <button class="btn-new-shoot" id="btn-new-shoot">New Shoot</button>
+    <button class="btn-new-shoot" id="btn-new-shoot">Photograph Another Vehicle →</button>
   </div>
 </div>
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v6.0
+// SNAP IT v6.1
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -802,7 +842,9 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
 
   // If there's a new blob, save it. Otherwise keep existing (Keep & Next flow)
   if (capturedBlob) {
-    const filename = `${currentReg}-${String(shot.id).padStart(2,'0')}-${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.jpg`;
+    const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+  const filename = `${currentReg}-${String(shot.id).padStart(2,'0')}-${shot.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}-${dateStr}.jpg`;
     const dataUrl = await blobToDataUrl(capturedBlob);
     if (!shotData[shot.id]) capturedCount++;
     shotData[shot.id] = { blob: capturedBlob, dataUrl, filename, status: 'taken' };
@@ -909,13 +951,7 @@ function refreshList() {
       const badge = document.createElement('div');
       badge.className = 'list-pos-badge';
       badge.textContent = `POSITION ${shot.position}`;
-      const label = document.createElement('div');
-      label.className = 'list-pos-label';
-      label.textContent = shot.position === 'A'
-        ? 'Vehicle facing camera'
-        : 'Vehicle repositioned for rear & detail shots';
       divider.appendChild(badge);
-      divider.appendChild(label);
       container.appendChild(divider);
     }
 
@@ -1004,9 +1040,33 @@ function refreshList() {
 
 function finishShoot() {
   document.getElementById('progress-fill').style.width = '100%';
+  const uploadedCount = Object.values(shotData).filter(s => s.status==='uploaded').length;
+  const failedCount = Object.values(shotData).filter(s => s.status==='failed').length;
   document.getElementById('done-captured').textContent = capturedCount;
-  document.getElementById('done-uploaded').textContent = Object.values(shotData).filter(s => s.status==='uploaded').length;
+  document.getElementById('done-uploaded').textContent = uploadedCount;
   document.getElementById('done-skipped').textContent = skippedCount;
+
+  // Icon and title
+  const icon = document.getElementById('complete-icon');
+  const title = document.getElementById('complete-title');
+  const sub = document.getElementById('complete-sub');
+  const warning = document.getElementById('complete-warning');
+
+  if (failedCount > 0) {
+    icon.textContent = '⚠';
+    icon.className = 'complete-icon warning';
+    title.textContent = 'Shoot Complete';
+    sub.textContent = `${uploadedCount} of ${capturedCount} photos uploaded successfully.`;
+    document.getElementById('complete-warning-title').textContent = `${failedCount} photo${failedCount > 1 ? 's' : ''} failed to upload`;
+    warning.classList.add('visible');
+  } else {
+    icon.textContent = '✓';
+    icon.className = 'complete-icon';
+    title.textContent = 'Shoot Complete!';
+    sub.textContent = `All ${capturedCount} photos captured and uploaded successfully.`;
+    warning.classList.remove('visible');
+  }
+
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   showScreen('complete');
 }
@@ -1014,6 +1074,34 @@ function finishShoot() {
 // ── View list from complete ──
 document.getElementById('btn-view-list-complete').addEventListener('click', () => {
   showScreen('list'); refreshList();
+});
+
+document.getElementById('btn-complete-save').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-complete-save');
+  const captured = Object.values(shotData).filter(s => s.blob);
+  if (!captured.length) return;
+  const origContent = btn.innerHTML;
+  btn.innerHTML = '…';
+  try {
+    if (!window.JSZip) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    const zip = new JSZip();
+    const folder = zip.folder(`${currentReg}_snapit`);
+    for (const data of captured) folder.file(data.filename, data.blob);
+    const zipBlob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:3 } });
+    const zipNow = new Date();
+    const zipDate = zipNow.toISOString().slice(0,10).replace(/-/g,'');
+    const zipTime = zipNow.toTimeString().slice(0,8).replace(/:/g,'');
+    const zipName = `${currentReg}_${zipDate}_${zipTime}.zip`;
+    const zipFile = new File([zipBlob], zipName, { type:'application/zip' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files:[zipFile] })) {
+      await navigator.share({ files:[zipFile], title:`${currentReg} — Snap It Photos` });
+    } else {
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a'); a.href=url; a.download=zipFile.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }
+  } catch(e) { if (e.name !== 'AbortError') showToast('⚠ Save failed: ' + e.message, 'error'); }
+  btn.innerHTML = origContent;
 });
 
 // ── New shoot ──
@@ -1097,7 +1185,11 @@ document.getElementById('btn-download-all').addEventListener('click', async () =
     const folder = zip.folder(`${currentReg}_snapit`);
     for (const data of captured) folder.file(data.filename, data.blob);
     const zipBlob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:3 } });
-    const zipFile = new File([zipBlob], `${currentReg}_snapit.zip`, { type:'application/zip' });
+    const zipNow = new Date();
+    const zipDate = zipNow.toISOString().slice(0,10).replace(/-/g,'');
+    const zipTime = zipNow.toTimeString().slice(0,8).replace(/:/g,'');
+    const zipName = `${currentReg}_${zipDate}_${zipTime}.zip`;
+    const zipFile = new File([zipBlob], zipName, { type:'application/zip' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files:[zipFile] })) {
       await navigator.share({ files:[zipFile], title:`${currentReg} — Snap It Photos` });
     } else {
