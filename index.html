@@ -252,16 +252,23 @@
   .btn-save:active { opacity:0.9; }
 
   /* ══ COMPLETE ══ */
-  #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:32px 40px; text-align:center; gap:0; overflow-y:auto; }
-  .complete-icon { width:72px; height:72px; background:var(--accent-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:20px; }
+  #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:32px 40px; text-align:center; gap:16px; overflow-y:auto; }
+  .complete-icon { width:72px; height:72px; background:var(--accent-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; }
   .complete-icon.warning { background:rgba(255,71,87,0.12); }
-  .complete-warning { display:none; align-items:flex-start; gap:12px; background:var(--red-dim); border:1px solid rgba(255,71,87,0.25); border-radius:14px; padding:14px 16px; margin-bottom:20px; text-align:left; max-width:340px; }
+  .complete-success { display:none; font-size:13px; color:var(--green); font-weight:600; padding:8px 20px; background:rgba(71,255,138,0.08); border:1px solid rgba(71,255,138,0.2); border-radius:100px; }
+  .complete-success.visible { display:block; }
+  .complete-warning { display:none; align-items:flex-start; gap:12px; background:var(--red-dim); border:1px solid rgba(255,71,87,0.25); border-radius:14px; padding:14px 16px; text-align:left; max-width:340px; }
   .complete-warning.visible { display:flex; }
   .complete-warning-icon { font-size:20px; flex-shrink:0; margin-top:2px; }
   .complete-warning-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--red); margin-bottom:4px; }
   .complete-warning-sub { font-size:12px; color:var(--muted); line-height:1.5; }
-  .btn-complete-save { display:flex; align-items:center; justify-content:center; gap:6px; width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid var(--border); color:var(--white); cursor:pointer; flex-shrink:0; }
+  .btn-complete-save { display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,0.08); border:1.5px solid var(--border); color:var(--white); cursor:pointer; flex-shrink:0; }
   .btn-complete-save:active { background:rgba(255,255,255,0.15); }
+  .btn-upload-missing { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; padding:12px 24px; cursor:pointer; display:none; }
+  .btn-upload-missing.visible { display:block; }
+  .btn-upload-missing:disabled { opacity:0.6; }
+  .btn-finish-delete { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
+  .btn-finish-delete:active { color:var(--white); border-color:var(--white); }
   .complete-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:8px; }
   .complete-sub { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:24px; max-width:340px; }
   .complete-stats { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
@@ -320,7 +327,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.1</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v6.2</div>
 </div>
 
 <!-- SETTINGS -->
@@ -439,7 +446,6 @@
 <div class="screen" id="screen-complete">
   <div class="complete-icon" id="complete-icon">✓</div>
   <div class="complete-title" id="complete-title">Shoot Complete!</div>
-  <div class="complete-sub" id="complete-sub">All photos captured successfully.</div>
 
   <div class="complete-stats">
     <div class="complete-stat"><div class="complete-stat-num" id="done-captured">0</div><div class="complete-stat-label">Captured</div></div>
@@ -447,27 +453,34 @@
     <div class="complete-stat"><div class="complete-stat-num" id="done-skipped">0</div><div class="complete-stat-label">Skipped</div></div>
   </div>
 
+  <div class="complete-success" id="complete-success">
+    All photos uploaded successfully ✓✓
+  </div>
+
   <div class="complete-warning" id="complete-warning">
     <div class="complete-warning-icon">⚠</div>
     <div class="complete-warning-text">
-      <div class="complete-warning-title" id="complete-warning-title">Some photos failed to upload</div>
-      <div class="complete-warning-sub">Connect to WiFi and use Save All to keep a local copy.</div>
+      <div class="complete-warning-title" id="complete-warning-title">Some photos didn't upload</div>
+      <div class="complete-warning-sub">Check your connection, then tap Upload Missing.</div>
     </div>
   </div>
 
   <div class="complete-btns">
-    <button class="btn-complete-save" id="btn-complete-save">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/></svg>
-      Save to Device
+    <button class="btn-upload-missing" id="btn-upload-missing">↑ Upload Missing</button>
+    <button class="btn-complete-save" id="btn-complete-save" title="Save to Device">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/>
+      </svg>
     </button>
-    <button class="btn-view-list" id="btn-view-list-complete">View List</button>
-    <button class="btn-new-shoot" id="btn-new-shoot">Photograph Another Vehicle →</button>
+    <button class="btn-finish-delete" id="btn-finish-delete">Finish &amp; Delete</button>
   </div>
+</div>
+
 </div>
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v6.1
+// SNAP IT v6.2
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -816,7 +829,17 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
   canvas.width=sw; canvas.height=sh;
   canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
 
-  canvas.toBlob(blob => {
+  // Cap to 3840px and quality 0.80 to stay under Cloudinary 10MB limit
+  const MAX_PX = 3840;
+  let outW = sw, outH = sh;
+  if (sw > MAX_PX || sh > MAX_PX) {
+    const scale = MAX_PX / Math.max(sw, sh);
+    outW = Math.round(sw * scale); outH = Math.round(sh * scale);
+  }
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = outW; outCanvas.height = outH;
+  outCanvas.getContext('2d').drawImage(canvas, 0, 0, sw, sh, 0, 0, outW, outH);
+  outCanvas.toBlob(blob => {
     capturedBlob = blob;
     const url = URL.createObjectURL(blob);
     document.getElementById('preview-img').src = url;
@@ -825,7 +848,7 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
     document.getElementById('btn-save-next').textContent = reviewingFromList ? 'Save & Return →' : 'Save & Next →';
     shutterBtn.classList.remove('capturing');
     showScreen('retake');
-  }, 'image/jpeg', 0.92);
+  }, 'image/jpeg', 0.80);
 });
 
 // ── Retake ──
@@ -859,7 +882,7 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
   // Find earliest untaken, unskipped shot
   const nextIdx = findNextUntaken(0);
   if (nextIdx === -1) {
-    showScreen('list'); refreshList(); return;
+    finishShoot(); return;
   }
 
   currentIdx = nextIdx;
@@ -887,7 +910,7 @@ document.getElementById('btn-skip').addEventListener('click', () => {
   skippedShots.add(shot.id);
   skippedCount++;
   const nextIdx = findNextUntaken(currentIdx + 1);
-  if (nextIdx === -1) { showScreen('list'); refreshList(); return; }
+  if (nextIdx === -1) { finishShoot(); return; }
   currentIdx = nextIdx;
   updateCameraUI(currentIdx);
   const requestedLens = SHOTS[currentIdx].lens || 1.0;
@@ -1014,15 +1037,19 @@ function refreshList() {
 
     // Tap behaviour
     item.addEventListener('click', () => {
-      if (data) {
-        // Taken — show review
+      if (status === 'failed') {
+        // Failed — retry upload directly, don't open review
+        shotData[shot.id].status = 'taken';
+        uploadQueue = uploadQueue.filter(id => id !== shot.id);
+        uploadShot(shot.id); refreshList();
+      } else if (data) {
+        // Taken/uploaded — show review
         showReview(shot.id);
       } else {
         // Not taken — set as current, highlight
         currentIdx = idx;
         updateCameraUI(idx);
-        refreshList(); // re-render to move highlight
-        // They'll rotate to landscape to shoot
+        refreshList();
       }
     });
 
@@ -1039,41 +1066,68 @@ function refreshList() {
 // ── Finish shoot ──
 
 function finishShoot() {
-  document.getElementById('progress-fill').style.width = '100%';
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  updateCompleteScreen();
+  showScreen('complete');
+}
+
+function updateCompleteScreen() {
   const uploadedCount = Object.values(shotData).filter(s => s.status==='uploaded').length;
   const failedCount = Object.values(shotData).filter(s => s.status==='failed').length;
   document.getElementById('done-captured').textContent = capturedCount;
   document.getElementById('done-uploaded').textContent = uploadedCount;
   document.getElementById('done-skipped').textContent = skippedCount;
 
-  // Icon and title
   const icon = document.getElementById('complete-icon');
   const title = document.getElementById('complete-title');
-  const sub = document.getElementById('complete-sub');
   const warning = document.getElementById('complete-warning');
+  const success = document.getElementById('complete-success');
+  const uploadMissingBtn = document.getElementById('btn-upload-missing');
 
   if (failedCount > 0) {
-    icon.textContent = '⚠';
-    icon.className = 'complete-icon warning';
+    icon.textContent = '⚠'; icon.className = 'complete-icon warning';
     title.textContent = 'Shoot Complete';
-    sub.textContent = `${uploadedCount} of ${capturedCount} photos uploaded successfully.`;
-    document.getElementById('complete-warning-title').textContent = `${failedCount} photo${failedCount > 1 ? 's' : ''} failed to upload`;
-    warning.classList.add('visible');
+    warning.classList.add('visible'); success.classList.remove('visible');
+    uploadMissingBtn.classList.add('visible'); uploadMissingBtn.disabled = false;
+    uploadMissingBtn.textContent = `↑ Upload ${failedCount} Missing Photo${failedCount > 1 ? 's' : ''}`;
+    document.getElementById('complete-warning-title').textContent =
+      `${failedCount} photo${failedCount > 1 ? 's' : ''} didn't upload`;
   } else {
-    icon.textContent = '✓';
-    icon.className = 'complete-icon';
+    icon.textContent = '✓'; icon.className = 'complete-icon';
     title.textContent = 'Shoot Complete!';
-    sub.textContent = `All ${capturedCount} photos captured and uploaded successfully.`;
-    warning.classList.remove('visible');
+    warning.classList.remove('visible'); success.classList.add('visible');
+    uploadMissingBtn.classList.remove('visible');
   }
-
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  showScreen('complete');
 }
 
 // ── View list from complete ──
-document.getElementById('btn-view-list-complete').addEventListener('click', () => {
-  showScreen('list'); refreshList();
+// Upload Missing button
+document.getElementById('btn-upload-missing').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-upload-missing');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+  const failed = Object.entries(shotData).filter(([,d]) => d.status === 'failed');
+  for (const [id, data] of failed) {
+    shotData[id].status = 'taken';
+    try {
+      await uploadToCloudinary(data.blob, data.filename);
+      shotData[id].status = 'uploaded';
+    } catch(e) {
+      shotData[id].status = 'failed';
+    }
+  }
+  updateCompleteScreen();
+});
+
+// Finish & Delete — clear session and go home
+document.getElementById('btn-finish-delete').addEventListener('click', () => {
+  currentIdx=0; capturedCount=0; skippedCount=0; previousPosition=null;
+  capturedBlob=null; shotData={}; uploadQueue={}; currentLens=-1; cameraMap={};
+  skippedShots=new Set(); reviewingFromList=false;
+  if (retryTimer) clearInterval(retryTimer);
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('reg-number').value = '';
+  document.getElementById('reg-hint').textContent = '';
+  showScreen('home');
 });
 
 document.getElementById('btn-complete-save').addEventListener('click', async () => {
@@ -1105,16 +1159,7 @@ document.getElementById('btn-complete-save').addEventListener('click', async () 
 });
 
 // ── New shoot ──
-document.getElementById('btn-new-shoot').addEventListener('click', () => {
-  currentIdx=0; capturedCount=0; skippedCount=0; previousPosition=null;
-  capturedBlob=null; shotData={}; uploadQueue=[]; currentLens=-1; cameraMap={};
-  reviewingFromList=false; skippedShots=new Set();
-  if (retryTimer) clearInterval(retryTimer);
-  document.getElementById('progress-fill').style.width = '0%';
-  document.getElementById('reg-number').value = '';
-  document.getElementById('reg-hint').textContent = '';
-  showScreen('home');
-});
+// btn-finish-delete and btn-new-shoot handled above
 
 // ── Upload ──
 async function uploadToCloudinary(blob, filename) {
@@ -1141,12 +1186,14 @@ async function uploadShot(shotId) {
     showToast(`✓ Uploaded`, 'success');
     updateUploadWarning();
     if (document.getElementById('screen-list').classList.contains('active')) refreshList();
+    if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   } catch(e) {
     shotData[shotId].status = 'failed';
     if (!uploadQueue.includes(shotId)) uploadQueue.push(shotId);
     updateUploadWarning();
     showToast(`⚠ Upload failed: ${e.message}`, 'error');
     if (document.getElementById('screen-list').classList.contains('active')) refreshList();
+    if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   }
 }
 
