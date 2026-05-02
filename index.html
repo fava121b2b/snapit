@@ -292,7 +292,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.5</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.6</div>
 </div>
 
 <!-- SETTINGS -->
@@ -418,7 +418,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.5
+// SNAP IT v5.6
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -814,19 +814,13 @@ function refreshList() {
   const taken = Object.keys(shotData).length;
   const uploaded = Object.values(shotData).filter(s => s.status==='uploaded').length;
   const failed = Object.values(shotData).filter(s => s.status==='failed').length;
-  const remaining = Math.max(0, SHOTS.length - taken - skippedCount);
-
-
+  const allDone = (taken + skippedCount) >= SHOTS.length;
 
   document.getElementById('btn-download-all').disabled = taken === 0;
-
-  const uploaded = Object.values(shotData).filter(s => s.status==='uploaded').length;
-  const failed = Object.values(shotData).filter(s => s.status==='failed').length;
   document.getElementById('ls-taken').textContent = taken;
   document.getElementById('ls-uploaded').textContent = uploaded;
   document.getElementById('ls-failed').textContent = failed;
   document.getElementById('ls-skipped').textContent = skippedCount;
-  const allDone = (taken + skippedCount) >= SHOTS.length;
   document.getElementById('list-complete-banner').classList.toggle('visible', allDone);
 
 
