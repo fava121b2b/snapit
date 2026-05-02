@@ -290,10 +290,9 @@
       style="text-transform:uppercase;letter-spacing:2px;font-size:18px;text-align:center;">
     <div class="token-hint" id="reg-hint"></div>
   </div>
-  <button class="btn-start" id="btn-start" ontouchstart="document.getElementById('debug-box').textContent='btn-start touched'" onclick="document.getElementById('debug-box').textContent='btn-start clicked'">Start Shoot</button>
-  <button class="btn-settings" id="btn-settings" ontouchstart="document.getElementById('debug-box').textContent='btn-settings touched'" onclick="document.getElementById('debug-box').textContent='btn-settings clicked'">⚙ Settings</button>
-  <div id="debug-box" style="position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#ff4757;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99999;min-width:200px;text-align:center;">Tap a button to test</div>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.5-debug</div>
+  <button class="btn-start" id="btn-start">Start Shoot</button>
+  <button class="btn-settings" id="btn-settings">⚙ Settings</button>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v5.5</div>
 </div>
 
 <!-- SETTINGS -->
@@ -419,7 +418,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v5.5-debug
+// SNAP IT v5.5
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -452,7 +451,7 @@ async function loadShots() {
     document.getElementById('stat-mandatory').textContent = SHOTS.filter(s => s.mandatory).length;
     document.getElementById('stat-optional').textContent = SHOTS.filter(s => !s.mandatory).length;
     document.getElementById('hud-total').textContent = SHOTS.length;
-    document.getElementById('ls-remaining').textContent = SHOTS.length;
+    // ls-remaining removed from DOM
   } catch(e) { console.error('Could not load shots.json', e); }
 }
 
