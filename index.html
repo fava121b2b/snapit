@@ -360,7 +360,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.0</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.3</div>
 </div>
 
 <!-- SETTINGS -->
@@ -521,7 +521,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.0
+// SNAP IT v7.3
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -543,6 +543,7 @@ let currentLens = -1;
 let shotData = {};
 let skippedShots = new Set(); // track which shot ids were skipped
 let uploadQueue = [];
+let activeUploads = 0; // count of uploads currently in flight
 let retryTimer = null;
 
 // ── Load shots ──
@@ -772,19 +773,65 @@ async function buildCameraMap() {
   const videoDevices = devices.filter(d => d.kind === 'videoinput');
   console.log('All cameras:', videoDevices.map(d => d.label));
   cameraMap = {};
-  for (const d of videoDevices) {
-    const label = d.label.toLowerCase();
-    if (label.includes('front') || label.includes('selfie') || label.includes('facetime') || label.includes('user')) continue;
-    if (label.startsWith('0.5x'))    cameraMap[0.5] = d.deviceId;
-    else if (label.startsWith('1x')) cameraMap[1.0] = d.deviceId;
-    else if (label.startsWith('2x')) cameraMap[2.0] = d.deviceId;
-    else if (label.startsWith('3x')) cameraMap[3.0] = d.deviceId;
+
+  // iOS Safari labels rear cameras as:
+  //   "Back Ultra Wide Camera"  → 0.5x
+  //   "Back Camera"             → 1.0x (main/wide)
+  //   "Back Dual Wide Camera"   → 1.0x (some models)
+  //   "Back Telephoto Camera"   → 2.0x or 3.0x
+  //   "Back Triple Camera"      → multi-lens system, treat as 1.0x
+  // Some models also prefix with magnification e.g. "0.5x Back Ultra Wide..."
+  // We handle both patterns.
+
+  const rearCameras = videoDevices.filter(d => {
+    const l = d.label.toLowerCase();
+    return !l.includes('front') && !l.includes('selfie') &&
+           !l.includes('facetime') && !l.includes('user');
+  });
+
+  for (const d of rearCameras) {
+    const l = d.label.toLowerCase();
+
+    // Pattern 1: label starts with magnification prefix (some browsers/devices)
+    const prefixMatch = l.match(/^(\d+(?:\.\d+)?)x\s/);
+    if (prefixMatch) {
+      const mag = parseFloat(prefixMatch[1]);
+      if (!cameraMap[mag]) cameraMap[mag] = d.deviceId;
+      continue;
+    }
+
+    // Pattern 2: iOS descriptive names
+    if (l.includes('ultra wide') || l.includes('ultrawide')) {
+      if (!cameraMap[0.5]) cameraMap[0.5] = d.deviceId;
+    } else if (l.includes('telephoto')) {
+      // Could be 2x or 3x — store under 2.0 for now, user can override
+      if (!cameraMap[2.0]) cameraMap[2.0] = d.deviceId;
+    } else if (l.includes('back camera') || l.includes('back wide') ||
+               l.includes('dual wide') || l.includes('triple') ||
+               l.includes('back') ) {
+      // Default rear camera = 1x
+      if (!cameraMap[1.0]) cameraMap[1.0] = d.deviceId;
+    }
   }
+
+  // If we got nothing useful, fall back to ordering:
+  // first rear camera = 1x, last = telephoto if multiple
+  if (Object.keys(cameraMap).length === 0 && rearCameras.length > 0) {
+    cameraMap[1.0] = rearCameras[0].deviceId;
+    if (rearCameras.length >= 2) cameraMap[0.5] = rearCameras[1].deviceId;
+    if (rearCameras.length >= 3) cameraMap[2.0] = rearCameras[2].deviceId;
+  }
+
+  // Fill any missing slots with closest available
   const slots = [0.5, 1.0, 2.0];
   for (const slot of slots) {
-    if (!cameraMap[slot] && Object.keys(cameraMap).length > 0) cameraMap[slot] = findClosestDeviceId(slot);
+    if (!cameraMap[slot] && Object.keys(cameraMap).length > 0) {
+      cameraMap[slot] = findClosestDeviceId(slot);
+    }
   }
-  console.log('Camera map:', cameraMap);
+
+  console.log('Camera map result:', cameraMap);
+  console.log('Rear cameras found:', rearCameras.map(d => `${d.label} → ${d.deviceId.slice(0,8)}`));
 }
 
 function findClosestDeviceId(requested) {
@@ -838,7 +885,11 @@ function updateLensButtons(lens) {
 }
 
 document.querySelectorAll('.lens-btn').forEach(btn => {
-  btn.addEventListener('click', () => { currentLens = -1; startCamera(parseFloat(btn.dataset.lens)); });
+  btn.addEventListener('click', () => {
+    const requested = parseFloat(btn.dataset.lens);
+    if (requested === currentLens) return; // already on this lens
+    startCamera(requested);
+  });
 });
 
 // ── Overlay opacity ──
@@ -1144,16 +1195,13 @@ function updateCompleteScreen() {
   const warning = document.getElementById('complete-warning');
   const success = document.getElementById('complete-success');
 
-  const pendingCount = uploadQueue.length;
-  const totalUploading = failedCount + pendingCount;
-
   const progressWrap = document.getElementById('upload-progress-wrap');
   const progressFill = document.getElementById('upload-progress-fill');
   const progressLabel = document.getElementById('upload-progress-label');
 
-  if (pendingCount > 0) {
+  if (activeUploads > 0) {
     // Actively uploading — show progress bar
-    icon.textContent = '✓'; icon.className = 'complete-icon uploading';
+    icon.textContent = '↑'; icon.className = 'complete-icon uploading';
     title.textContent = 'Uploading…';
     warning.classList.remove('visible'); success.classList.remove('visible');
     progressWrap.classList.add('visible');
@@ -1183,11 +1231,13 @@ function updateCompleteScreen() {
 }
 
 // ── View list from complete ──
-// Finish & Delete — clear session and go home
+// Finish & Delete — confirm then clear session and go home
 document.getElementById('btn-finish-delete').addEventListener('click', () => {
+  const ok = confirm('Are you sure? Any photos not uploaded or saved to your device will be permanently deleted.');
+  if (!ok) return;
   currentIdx=0; capturedCount=0; skippedCount=0; previousPosition=null;
   capturedBlob=null; shotData={}; uploadQueue={}; currentLens=-1; cameraMap={};
-  skippedShots=new Set(); reviewingFromList=false;
+  skippedShots=new Set(); reviewingFromList=false; activeUploads=0;
   if (retryTimer) clearInterval(retryTimer);
   document.getElementById('progress-fill').style.width = '0%';
   document.getElementById('reg-number').value = '';
@@ -1245,21 +1295,21 @@ async function uploadToCloudinary(blob, filename) {
 async function uploadShot(shotId) {
   const data = shotData[shotId];
   if (!data) return;
+  activeUploads++;
+  if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   try {
     await uploadToCloudinary(data.blob, data.filename);
     shotData[shotId].status = 'uploaded';
     showToast(`✓ Uploaded`, 'success');
-    updateUploadWarning();
-    if (document.getElementById('screen-list').classList.contains('active')) refreshList();
-    if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   } catch(e) {
     shotData[shotId].status = 'failed';
     if (!uploadQueue.includes(shotId)) uploadQueue.push(shotId);
-    updateUploadWarning();
     showToast(`⚠ Upload failed: ${e.message}`, 'error');
-    if (document.getElementById('screen-list').classList.contains('active')) refreshList();
-    if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   }
+  activeUploads = Math.max(0, activeUploads - 1);
+  updateUploadWarning();
+  if (document.getElementById('screen-list').classList.contains('active')) refreshList();
+  if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
 }
 
 function startRetryTimer() {
@@ -1270,11 +1320,21 @@ function startRetryTimer() {
     for (const id of queue) {
       const data = shotData[id];
       if (!data) continue;
-      try { await uploadToCloudinary(data.blob, data.filename); shotData[id].status = 'uploaded'; showToast('✓ Re-uploaded', 'success'); }
-      catch(e) { shotData[id].status = 'failed'; uploadQueue.push(id); }
+      activeUploads++;
+      if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
+      try {
+        await uploadToCloudinary(data.blob, data.filename);
+        shotData[id].status = 'uploaded';
+        showToast('✓ Re-uploaded', 'success');
+      } catch(e) {
+        shotData[id].status = 'failed';
+        uploadQueue.push(id);
+      }
+      activeUploads = Math.max(0, activeUploads - 1);
     }
     updateUploadWarning();
     if (document.getElementById('screen-list').classList.contains('active')) refreshList();
+    if (document.getElementById('screen-complete').classList.contains('active')) updateCompleteScreen();
   }, 30000);
 }
 
@@ -1341,19 +1401,19 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 const TIPS = [
   'Make sure the vehicle is clean and dry before starting the shoot.',
   'Overcast light gives the most even results — avoid shooting in harsh direct sun.',
-  'Check all doors, windows and the boot are closed before exterior shots.',
-  'Ensure the number plate is clean and clearly visible.',
-  'Remove any personal items visible through the windows before interior shots.',
-  'For alloy shots, turn the wheel so the brake caliper is hidden behind the spokes.',
+  'You can adjust the opacity of the overlay with the slider in the camera view.',
+  'You can retake a photo if you are not happy with it.',
+  'Remove any personal items from the car before taking interior shots.',
+  'Watch out for other moving vehicles when you are photographing.',
   'Turn the infotainment screen on before interior shots.',
-  'Check your Cloudinary connection before starting a long shoot.',
-  'Keep your phone level — use the horizon line in the viewfinder.',
+  'Check your internet connection before starting a long shoot.',
+  'Keep your phone level.',
   'For detail shots, get as close as possible and let the camera focus.',
-  'Shoot in landscape mode — the app will remind you if you rotate.',
+  'Shoot in landscape mode.',
   'Clean the camera lens before starting for sharper images.',
   'Consistent background makes photos look more professional.',
   'Take your time with the framing overlay — it is worth getting right.',
-  'Check the shot list after every few shots to make sure uploads are going through.',
+  'Check that all the photos have been uploaded before exiting the shoot.',
 ];
 
 function initHomeTip() {
@@ -1384,11 +1444,11 @@ async function updateConnectivity() {
     });
     dot.className = 'conn-dot online';
     label.className = 'conn-label online';
-    label.textContent = 'Connected — uploads will work';
+    label.textContent = 'Connected — ready to upload';
   } catch(e) {
     dot.className = 'conn-dot online';
     label.className = 'conn-label online';
-    label.textContent = 'Connected — uploads will work';
+    label.textContent = 'Connected — ready to upload';
   }
 }
 
