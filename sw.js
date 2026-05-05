@@ -1,4 +1,4 @@
-const CACHE = 'snapit-v28';
+const CACHE = 'snapit-v29';
 const ASSETS = [
   './',
   './index.html',
