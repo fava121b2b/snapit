@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Snap It">
@@ -23,21 +23,25 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html {
     width:100%; height:100%;
+    height: 100dvh;
     background:var(--bg);
   }
   body {
-    width:100%; height:100%; min-height:-webkit-fill-available;
+    width:100%;
+    height:100%; height:100dvh;
     background:var(--bg); color:var(--white);
     font-family:'DM Sans',sans-serif;
     overflow:hidden; user-select:none;
-    /* No position:fixed on body — causes iOS touch event blocking */
+    -webkit-text-size-adjust:100%;
+    touch-action:none;
   }
   .screen {
     position:fixed; top:0; left:0; right:0; bottom:0;
-    width:100vw; height:100vh; height:-webkit-fill-available;
+    width:100%; width:100vw;
+    height:100%; height:100vh; height:100dvh;
     display:none; flex-direction:column;
     padding-top:var(--safe-top); padding-bottom:var(--safe-bottom);
-    z-index:1;
+    z-index:1; overflow:hidden;
   }
   .screen.active { display:flex; z-index:10; }
 
@@ -100,7 +104,8 @@
   .btn-save-settings:active { opacity:0.9; }
 
   /* ══ SHOT LIST ══ */
-  #screen-list { background:var(--bg); flex-direction:column; }
+  #screen-list { background:var(--bg); flex-direction:column; overflow:hidden; }
+  #screen-list .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
   .list-header {
     display:flex; align-items:center; justify-content:space-between;
     padding:calc(var(--safe-top) + 14px) 20px 14px;
@@ -152,7 +157,7 @@
   .list-complete-banner-sub { font-size:12px; color:var(--muted); }
 
   /* List scroll */
-  .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
 
 
   .list-pos-badge {
@@ -211,9 +216,9 @@
   .btn-pos-ready:active { opacity:0.9; }
 
   /* ══ CAMERA ══ */
-  #screen-camera { background:#000; overflow:hidden; }
-  #camera-video { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100vh * 4 / 3)); height:min(100vh,calc(100vw * 3 / 4)); object-fit:cover; background:#000; }
-  #overlay-img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100vh * 4 / 3)); height:min(100vh,calc(100vw * 3 / 4)); object-fit:cover; opacity:0.4; pointer-events:none; transition:opacity 0.3s; display:none; }
+  #screen-camera { background:#000; overflow:hidden; padding:0; }
+  #camera-video { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100dvh * 4 / 3)); height:min(100dvh,calc(100vw * 3 / 4)); object-fit:cover; background:#000; }
+  #overlay-img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100dvh * 4 / 3)); height:min(100dvh,calc(100vw * 3 / 4)); object-fit:cover; opacity:0.4; pointer-events:none; transition:opacity 0.3s; display:none; }
 
   /* Camera HUD */
   .cam-hud-top { position:absolute; top:0; left:0; right:0; padding:calc(var(--safe-top) + 8px) 16px 10px; background:linear-gradient(to bottom,rgba(0,0,0,0.75) 0%,transparent 100%); display:flex; align-items:center; gap:12px; z-index:10; }
@@ -266,7 +271,7 @@
 
   /* ══ RETAKE / REVIEW ══ */
   #screen-retake { background:#000; overflow:hidden; }
-  #preview-img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100vh * 4 / 3)); height:min(100vh,calc(100vw * 3 / 4)); object-fit:cover; }
+  #preview-img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100dvh * 4 / 3)); height:min(100dvh,calc(100vw * 3 / 4)); object-fit:cover; }
   .retake-hud { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:flex-end; padding:24px 24px calc(var(--safe-bottom) + 24px); background:linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 50%); }
   .retake-shot-name { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--white); margin-bottom:6px; }
   .retake-hint { font-size:13px; color:var(--muted); margin-bottom:24px; }
@@ -360,7 +365,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.8</div>
 </div>
 
 <!-- SETTINGS -->
@@ -523,7 +528,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.6
+// SNAP IT v7.8
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -589,7 +594,14 @@ function handleOrientation() {
 }
 
 // Only listen to orientationchange — not resize (resize fires on every screen change)
-window.addEventListener('orientationchange', () => setTimeout(handleOrientation, 200));
+window.addEventListener('orientationchange', () => {
+  // Reset viewport scale on rotation to prevent iOS PWA zoom bug
+  const mv = document.querySelector('meta[name=viewport]');
+  if (mv) {
+    mv.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover';
+  }
+  setTimeout(handleOrientation, 200);
+});
 
 // ── Credentials ──
 function loadCredentials() {
@@ -895,15 +907,26 @@ async function startCamera(requestedLens = 1.0) {
     }
     stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
 
-    // Apply virtual zoom if needed (2x crop of main sensor)
+    // Apply virtual zoom if needed (2x crop of main sensor = 48mm equivalent)
     if (virtualZoom) {
       try {
         const track = stream.getVideoTracks()[0];
         const caps = track.getCapabilities ? track.getCapabilities() : {};
-        if (caps.zoom) {
-          await track.applyConstraints({ advanced: [{ zoom: virtualZoom }] });
+        if (caps.zoom && caps.zoom.min !== undefined && caps.zoom.max !== undefined) {
+          // iOS reports zoom relative to camera minimum
+          // Clamp requested zoom to what the device actually supports
+          const zoomVal = Math.min(Math.max(virtualZoom, caps.zoom.min), caps.zoom.max);
+          await track.applyConstraints({ advanced: [{ zoom: zoomVal }] });
+          console.log(`Applied zoom ${zoomVal} (requested ${virtualZoom}, range ${caps.zoom.min}–${caps.zoom.max})`);
+        } else {
+          // zoom API not available — fall back to canvas crop on capture
+          stream._virtualZoom = virtualZoom;
+          console.log('Zoom API unavailable — will crop on capture');
         }
-      } catch(e) { /* zoom not supported — falls back to 1x view */ }
+      } catch(e) {
+        stream._virtualZoom = virtualZoom;
+        console.warn('Zoom constraint failed — will crop on capture:', e.message);
+      }
     }
     const video = document.getElementById('camera-video');
     video.srcObject = stream; video.muted = true;
@@ -980,6 +1003,22 @@ document.getElementById('btn-shutter').addEventListener('click', async () => {
     // Frame appears black — wait another frame and retry once
     await new Promise(resolve => requestAnimationFrame(resolve));
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+  }
+
+  // Apply virtual zoom crop if hardware zoom wasn't available
+  // A 2x virtual zoom = crop centre 50% of frame (equivalent to 48mm on 24mm sensor)
+  if (stream && stream._virtualZoom) {
+    const zf = stream._virtualZoom;
+    const cropW = Math.round(sw / zf);
+    const cropH = Math.round(sh / zf);
+    const cropX = Math.round((sw - cropW) / 2);
+    const cropY = Math.round((sh - cropH) / 2);
+    // Redraw canvas with cropped region scaled back to original size
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = sw; cropCanvas.height = sh;
+    cropCanvas.getContext('2d').drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, sw, sh);
+    // Replace canvas reference so downstream code uses the cropped version
+    canvas.getContext('2d').drawImage(cropCanvas, 0, 0);
   }
 
   // Cap to 3840px and quality 0.80 to stay under Cloudinary 10MB limit
