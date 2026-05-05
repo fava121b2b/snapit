@@ -252,6 +252,24 @@
   }
   .btn-list-finish:active { color:var(--white); border-color:var(--white); }
 
+  /* Focus ring */
+  .focus-ring {
+    position:absolute; width:68px; height:68px;
+    border:2px solid var(--accent); border-radius:10px;
+    pointer-events:none; z-index:15;
+    transform:translate(-50%,-50%) scale(1.4);
+    opacity:0;
+    transition:transform 0.12s ease, opacity 0.12s ease;
+  }
+  .focus-ring.visible {
+    transform:translate(-50%,-50%) scale(1);
+    opacity:1;
+  }
+  .focus-ring.fading {
+    opacity:0;
+    transition:opacity 0.6s ease;
+  }
+
   /* ══ CAMERA ══ */
   #screen-camera { background:#000; overflow:hidden; padding:0; }
   #camera-video { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(100vw,calc(100dvh * 4 / 3)); height:min(100dvh,calc(100vw * 3 / 4)); object-fit:cover; background:#000; }
@@ -404,7 +422,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.9</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v9.0</div>
 </div>
 
 <!-- SETTINGS -->
@@ -506,6 +524,7 @@
     <button class="cam-shutter" id="btn-shutter"></button>
     <button class="cam-btn-side skip mandatory" id="btn-skip">SKIP</button>
   </div>
+  <div class="focus-ring" id="focus-ring"></div>
   <div class="cam-error" id="cam-error">
     <div class="cam-error-icon">📷</div>
     <div class="cam-error-title">Camera Access Needed</div>
@@ -576,7 +595,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.9
+// SNAP IT v9.0
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -1071,6 +1090,69 @@ async function startCamera(requestedLens = 1.0) {
   }
 }
 
+
+// ── Tap to focus ──
+let focusFadeTimer = null;
+
+document.getElementById('camera-video').addEventListener('click', async (e) => {
+  if (!stream) return;
+  const video = document.getElementById('camera-video');
+  const ring = document.getElementById('focus-ring');
+  const rect = video.getBoundingClientRect();
+
+  // Position ring at tap point
+  ring.style.left = e.clientX + 'px';
+  ring.style.top = e.clientY + 'px';
+  ring.className = 'focus-ring visible';
+  clearTimeout(focusFadeTimer);
+
+  // Normalised coordinates relative to video element (0-1)
+  const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+  try {
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+
+    // Apply pointsOfInterest and focusMode in a single call — this is the
+    // correct way to trigger tap-to-focus on iOS Safari
+    const adv = {};
+    if (caps.pointsOfInterest) {
+      adv.pointsOfInterest = [{ x: nx, y: ny }];
+    }
+    if (caps.focusMode) {
+      // Use single-shot at tap point, then switch back to continuous
+      if (caps.focusMode.includes('single-shot')) {
+        adv.focusMode = 'single-shot';
+      } else if (caps.focusMode.includes('continuous')) {
+        adv.focusMode = 'continuous';
+      }
+    }
+    if (Object.keys(adv).length > 0) {
+      await track.applyConstraints({ advanced: [adv] });
+    }
+    // Switch back to continuous after focus locks, keeping point of interest
+    if (adv.focusMode === 'single-shot' && caps.focusMode.includes('continuous')) {
+      setTimeout(async () => {
+        try {
+          if (stream) {
+            const t = stream.getVideoTracks()[0];
+            if (t) await t.applyConstraints({ advanced: [{ focusMode: 'continuous', pointsOfInterest: [{ x: nx, y: ny }] }] });
+          }
+        } catch(e) {}
+      }, 800);
+    }
+  } catch(e) {
+    console.warn('Tap focus error:', e.message);
+  }
+
+  // Fade ring out after 2 seconds
+  focusFadeTimer = setTimeout(() => {
+    ring.className = 'focus-ring fading';
+    setTimeout(() => { ring.className = 'focus-ring'; }, 600);
+  }, 2000);
+});
 
 function updateLensButtons(lens) {
   const map = { 0.5: 'lens-btn-05', 1.0: 'lens-btn-1', 2.0: 'lens-btn-2' };
