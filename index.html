@@ -18,7 +18,10 @@
     --red:#ff4757; --red-dim:rgba(255,71,87,0.15); --green:#47ff8a;
     --white:#f0f0f0; --muted:#666; --muted2:#444;
     --pos-a:#47b8ff; --pos-b:#ff9f47;
-    --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+    --safe-top:env(safe-area-inset-top, 44px);
+    --safe-bottom:env(safe-area-inset-bottom, 20px);
+    --safe-left:env(safe-area-inset-left, 0px);
+    --safe-right:env(safe-area-inset-right, 0px);
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html {
@@ -36,17 +39,17 @@
     touch-action:none;
   }
   .screen {
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    width:100%; width:100vw;
-    height:100%; height:100vh; height:100dvh;
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    width:100vw; height:100vh; height:100dvh;
     display:none; flex-direction:column;
-    padding-top:var(--safe-top); padding-bottom:var(--safe-bottom);
     z-index:1; overflow:hidden;
   }
   .screen.active { display:flex; z-index:10; }
 
   /* ══ HOME ══ */
-  #screen-home { background:var(--bg); align-items:center; justify-content:center; }
+  #screen-home { background:var(--bg); align-items:center; justify-content:center;
+    padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); }
   .home-bg { position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(232,255,71,0.06) 0%,transparent 70%); pointer-events:none; }
   .home-logo { font-family:'Syne',sans-serif; font-size:72px; font-weight:800; letter-spacing:-3px; color:var(--white); line-height:1; }
   .home-logo span { color:var(--accent); }
@@ -108,7 +111,10 @@
   #screen-list .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
   .list-header {
     display:flex; align-items:center; justify-content:space-between;
-    padding:calc(var(--safe-top) + 14px) 20px 14px;
+    padding-top:calc(var(--safe-top) + 14px);
+    padding-left:calc(var(--safe-left) + 20px);
+    padding-right:calc(var(--safe-right) + 20px);
+    padding-bottom:14px;
     border-bottom:1px solid var(--border); flex-shrink:0;
   }
   .list-header-left { display:flex; flex-direction:column; gap:4px; }
@@ -157,7 +163,7 @@
   .list-complete-banner-sub { font-size:12px; color:var(--muted); }
 
   /* List scroll */
-  .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
+  .list-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding-bottom:var(--safe-bottom); }
 
 
   .list-pos-badge {
@@ -214,6 +220,19 @@
   .pos-diagram svg { width:100%; height:auto; display:block; }
   .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; }
   .btn-pos-ready:active { opacity:0.9; }
+
+  .list-footer {
+    padding:12px 20px calc(var(--safe-bottom) + 12px);
+    border-top:1px solid var(--border); flex-shrink:0;
+  }
+  .btn-list-finish {
+    width:100%; padding:14px; border-radius:14px;
+    background:var(--surface2); border:1.5px solid var(--border);
+    color:var(--muted); font-family:'Syne',sans-serif;
+    font-size:15px; font-weight:700; cursor:pointer;
+    transition:color 0.15s, border-color 0.15s;
+  }
+  .btn-list-finish:active { color:var(--white); border-color:var(--white); }
 
   /* ══ CAMERA ══ */
   #screen-camera { background:#000; overflow:hidden; padding:0; }
@@ -282,7 +301,9 @@
   .btn-save:active { opacity:0.9; }
 
   /* ══ COMPLETE ══ */
-  #screen-complete { background:var(--bg); align-items:center; justify-content:center; padding:32px 40px; text-align:center; gap:16px; overflow-y:auto; }
+  #screen-complete { background:var(--bg); align-items:center; justify-content:center;
+    padding:calc(var(--safe-top) + 24px) 40px calc(var(--safe-bottom) + 24px);
+    text-align:center; gap:16px; overflow-y:auto; }
   .complete-icon { width:72px; height:72px; background:#0a0a0a; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; border:2px solid var(--accent); color:var(--accent); font-family:'Syne',sans-serif; font-weight:800; }
   .complete-icon.warning { border-color:var(--red); color:var(--red); background:#0a0a0a; }
   .complete-icon.uploading { border-color:var(--accent); color:var(--accent); }
@@ -302,6 +323,8 @@
   .upload-progress-bar-track { width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
   .upload-progress-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; width:0%; }
   .upload-progress-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; }
+  .btn-back-to-list { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
+  .btn-back-to-list:active { color:var(--white); border-color:var(--white); }
   .btn-finish-delete { background:transparent; border:1.5px solid rgba(255,71,87,0.5); color:var(--red); border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 36px; cursor:pointer; }
   .btn-finish-delete:active { background:var(--red-dim); }
   .btn-finish-delete-warning { font-size:11px; color:var(--muted); margin-top:8px; max-width:280px; line-height:1.4; }
@@ -365,7 +388,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.8</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.9</div>
 </div>
 
 <!-- SETTINGS -->
@@ -421,6 +444,9 @@
   </div>
 
   <div class="list-scroll" id="list-scroll"></div>
+  <div class="list-footer">
+    <button class="btn-list-finish" id="btn-list-finish">Finish Shoot →</button>
+  </div>
 </div>
 
 <!-- POSITION -->
@@ -514,6 +540,7 @@
   </div>
 
   <div class="complete-btns">
+    <button class="btn-back-to-list" id="btn-back-to-list">← Back to List</button>
     <button class="btn-complete-save" id="btn-complete-save" title="Save to Device">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/>
@@ -528,7 +555,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.8
+// SNAP IT v7.9
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -577,19 +604,21 @@ function handleOrientation() {
   const isLandscape = window.innerWidth > window.innerHeight;
   const activeScreen = document.querySelector('.screen.active')?.id;
 
-  // Only swap between list and camera on ACTUAL device rotation
-  if (!['screen-list', 'screen-camera'].includes(activeScreen)) return;
-
-  if (isLandscape && activeScreen === 'screen-list') {
-    suppressOrientation = true;
-    showScreen('camera');
-    ensureCamera();
-    setTimeout(() => { suppressOrientation = false; }, 500);
-  } else if (!isLandscape && activeScreen === 'screen-camera') {
-    suppressOrientation = true;
-    showScreen('list');
-    refreshList();
-    setTimeout(() => { suppressOrientation = false; }, 500);
+  if (isLandscape) {
+    if (activeScreen === 'screen-list' || activeScreen === 'screen-position') {
+      suppressOrientation = true;
+      previousPosition = currentPositionForRotate || previousPosition;
+      showScreen('camera');
+      ensureCamera();
+      setTimeout(() => { suppressOrientation = false; }, 500);
+    }
+  } else {
+    if (activeScreen === 'screen-camera') {
+      suppressOrientation = true;
+      showScreen('list');
+      refreshList();
+      setTimeout(() => { suppressOrientation = false; }, 500);
+    }
   }
 }
 
@@ -699,14 +728,18 @@ const SVG_POS_B = `<svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg"
   </g>
 </svg>`;
 
+let currentPositionForRotate = null;
+
 function showPositionScreen(pos, nextIdx) {
   document.getElementById('pos-title').textContent = 'Move to Position ' + pos;
   document.getElementById('pos-subtitle').innerHTML = pos === 'A'
     ? 'Angle the vehicle at <strong>45° to the wall</strong>. Turn the front wheels to full lock.'
     : 'Position the vehicle <strong>square to the wall</strong>, front facing in. Wheels straight.';
   document.getElementById('pos-diagram').innerHTML = pos === 'A' ? SVG_POS_A : SVG_POS_B;
+  currentPositionForRotate = pos;
   document.getElementById('btn-pos-ready').onclick = () => {
     previousPosition = pos;
+    currentPositionForRotate = null;
     showScreen('list');
     refreshList();
   };
@@ -1073,16 +1106,21 @@ document.getElementById('btn-save-next').addEventListener('click', async () => {
 
   // Find earliest untaken, unskipped shot
   const nextIdx = findNextUntaken(0);
-  if (nextIdx === -1) {
-    finishShoot(); return;
-  }
+  if (nextIdx === -1) { finishShoot(); return; }
 
+  const prevPos = SHOTS[currentIdx] ? SHOTS[currentIdx].position : null;
   currentIdx = nextIdx;
   updateCameraUI(currentIdx);
+  const nextShot = SHOTS[currentIdx];
 
-  // Always go back to camera to shoot the next shot
-  // handleOrientation will switch to list if user rotates to portrait
-  const requestedLens = SHOTS[currentIdx].lens || 1.0;
+  // Show position change prompt if position changes
+  if (prevPos && nextShot.position !== prevPos) {
+    showPositionScreen(nextShot.position, currentIdx);
+    return;
+  }
+
+  // Go back to camera
+  const requestedLens = nextShot.lens || 1.0;
   updateLensButtons(requestedLens);
   showScreen('camera');
   if (requestedLens !== currentLens || !stream) {
@@ -1101,11 +1139,17 @@ document.getElementById('btn-skip').addEventListener('click', () => {
   if (!shot) return;
   skippedShots.add(shot.id);
   skippedCount++;
+  const skipPrevPos = SHOTS[currentIdx] ? SHOTS[currentIdx].position : null;
   const nextIdx = findNextUntaken(currentIdx + 1);
   if (nextIdx === -1) { finishShoot(); return; }
   currentIdx = nextIdx;
   updateCameraUI(currentIdx);
-  const requestedLens = SHOTS[currentIdx].lens || 1.0;
+  const skipNextShot = SHOTS[currentIdx];
+  if (skipPrevPos && skipNextShot.position !== skipPrevPos) {
+    showPositionScreen(skipNextShot.position, currentIdx);
+    return;
+  }
+  const requestedLens = skipNextShot.lens || 1.0;
   updateLensButtons(requestedLens);
   if (requestedLens !== currentLens || !stream) { currentLens = requestedLens; startCamera(requestedLens); }
 });
@@ -1313,6 +1357,16 @@ function updateCompleteScreen() {
 }
 
 // ── View list from complete ──
+// Back to list from complete screen
+document.getElementById('btn-back-to-list').addEventListener('click', () => {
+  showScreen('list');
+  refreshList();
+});
+
+document.getElementById('btn-list-finish').addEventListener('click', () => {
+  finishShoot();
+});
+
 // Finish & Delete — confirm then clear session and go home
 document.getElementById('btn-finish-delete').addEventListener('click', () => {
   const ok = confirm('Are you sure? Any photos not uploaded or saved to your device will be permanently deleted.');
