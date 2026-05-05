@@ -212,14 +212,32 @@
   .btn-reupload { font-size:10px; font-weight:700; color:var(--red); background:transparent; border:1px solid var(--red); border-radius:100px; padding:2px 8px; cursor:pointer; }
 
   /* ══ POSITION ══ */
-  #screen-position { background:var(--bg); align-items:center; justify-content:center; text-align:center; padding:28px 40px; gap:0; }
+  #screen-position {
+    background:var(--bg);
+    align-items:center; justify-content:center;
+    text-align:center; padding:28px 40px; gap:0;
+  }
+  /* Portrait layout */
+  .pos-inner {
+    display:flex; flex-direction:column;
+    align-items:center; width:100%; max-width:460px;
+  }
   .pos-title { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; margin-bottom:8px; color:var(--white); }
   .pos-subtitle { font-size:14px; color:var(--muted); line-height:1.6; max-width:320px; margin-bottom:20px; }
   .pos-subtitle strong { color:var(--white); }
   .pos-diagram { width:100%; max-width:460px; margin-bottom:24px; }
   .pos-diagram svg { width:100%; height:auto; display:block; }
-  .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; }
+  .btn-pos-ready { background:var(--accent); color:#0a0a0a; border:none; border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 48px; cursor:pointer; flex-shrink:0; }
   .btn-pos-ready:active { opacity:0.9; }
+  /* Landscape layout — side by side */
+  @media (orientation: landscape) {
+    #screen-position { padding:16px 32px; }
+    .pos-inner { flex-direction:row; gap:32px; align-items:center; max-width:900px; }
+    .pos-inner-text { display:flex; flex-direction:column; align-items:flex-start; text-align:left; flex-shrink:0; max-width:260px; }
+    .pos-diagram { margin-bottom:0; max-width:340px; flex-shrink:0; }
+    .pos-title { font-size:20px; margin-bottom:6px; }
+    .pos-subtitle { font-size:13px; margin-bottom:16px; max-width:260px; }
+  }
 
   .list-footer {
     padding:12px 20px calc(var(--safe-bottom) + 12px);
@@ -388,7 +406,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.0</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.1</div>
 </div>
 
 <!-- SETTINGS -->
@@ -451,10 +469,14 @@
 
 <!-- POSITION -->
 <div class="screen" id="screen-position">
-  <div class="pos-title" id="pos-title">Move to Position A</div>
-  <div class="pos-subtitle" id="pos-subtitle"></div>
-  <div class="pos-diagram" id="pos-diagram"></div>
-  <button class="btn-pos-ready" id="btn-pos-ready">Vehicle Ready — Let's Go</button>
+  <div class="pos-inner">
+    <div class="pos-inner-text">
+      <div class="pos-title" id="pos-title">Move to Position A</div>
+      <div class="pos-subtitle" id="pos-subtitle"></div>
+      <button class="btn-pos-ready" id="btn-pos-ready">Vehicle Ready — Let's Go</button>
+    </div>
+    <div class="pos-diagram" id="pos-diagram"></div>
+  </div>
 </div>
 
 <!-- CAMERA -->
@@ -555,7 +577,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.0
+// SNAP IT v8.1
 // ══════════════════════════════════════════
 
 let SHOTS = [];
