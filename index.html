@@ -423,7 +423,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.3</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.4</div>
 </div>
 
 <!-- SETTINGS -->
@@ -595,7 +595,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.3
+// SNAP IT v8.4
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -1083,26 +1083,27 @@ document.getElementById('camera-video').addEventListener('click', async (e) => {
     const track = stream.getVideoTracks()[0];
     const caps = track.getCapabilities ? track.getCapabilities() : {};
 
-    if (caps.focusMode && caps.focusMode.includes('manual') && caps.focusDistance) {
-      // Manual focus supported — set point of interest
-      await track.applyConstraints({
-        advanced: [{ focusMode: 'manual', pointsOfInterest: [{ x: nx, y: ny }] }]
-      });
-    } else if (caps.focusMode && caps.focusMode.includes('single-shot')) {
-      // Single-shot autofocus at point
-      await track.applyConstraints({
-        advanced: [{ focusMode: 'single-shot', pointsOfInterest: [{ x: nx, y: ny }] }]
-      });
-    } else if (caps.pointsOfInterest) {
-      // Just set point of interest for continuous AF
-      await track.applyConstraints({
-        advanced: [{ pointsOfInterest: [{ x: nx, y: ny }] }]
-      });
+    // iOS Safari focus: set pointsOfInterest with continuous focusMode
+    // This is the correct API for tap-to-focus on iPhone
+    const constraints = { advanced: [] };
+    const adv = {};
+
+    if (caps.focusMode) {
+      if (caps.focusMode.includes('continuous')) adv.focusMode = 'continuous';
+      else if (caps.focusMode.includes('single-shot')) adv.focusMode = 'single-shot';
     }
-    // Show locked state after short delay
-    setTimeout(() => { ring.className = 'focus-ring locked'; }, 400);
+    if (caps.pointsOfInterest) {
+      adv.pointsOfInterest = [{ x: nx, y: ny }];
+    }
+    if (Object.keys(adv).length > 0) {
+      constraints.advanced.push(adv);
+      await track.applyConstraints(constraints);
+    }
+
+    // Show locked state after camera has had time to focus
+    setTimeout(() => { ring.className = 'focus-ring locked'; }, 600);
   } catch(e) {
-    // Focus API not supported — show ring briefly anyway as feedback
+    console.warn('Focus API error:', e.message);
     setTimeout(() => { ring.className = 'focus-ring locked'; }, 300);
   }
 
