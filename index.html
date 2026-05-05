@@ -388,7 +388,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.9</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.0</div>
 </div>
 
 <!-- SETTINGS -->
@@ -555,7 +555,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.9
+// SNAP IT v8.0
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -571,6 +571,7 @@ let reviewingFromList = false; // true when reviewing a taken shot from list
 // Camera
 let cameraMap = {};
 let currentLens = -1;
+let overlayCache = {}; // preloaded overlay images
 
 // Shot data: { [shotId]: { blob, dataUrl, filename, status } }
 // status: 'taken' | 'uploaded' | 'failed'
@@ -678,6 +679,7 @@ document.getElementById('btn-start').addEventListener('click', () => {
   document.getElementById('list-reg').textContent = reg;
   startRetryTimer();
   warmCamera();
+  preloadOverlays();
 
   // Show Position A prompt first, then go to list
   showPositionScreen('A', 0);
@@ -771,6 +773,25 @@ function ensureCamera() {
   }
 }
 
+// ── Preload overlay images ──
+function preloadOverlays() {
+  // Load all overlay images into memory in the background
+  // Priority: load current shot first, then surrounding shots, then rest
+  const ids = SHOTS.map(s => s.id);
+  let i = 0;
+  function loadNext() {
+    if (i >= ids.length) return;
+    const id = ids[i++];
+    if (overlayCache[id]) { loadNext(); return; }
+    const img = new Image();
+    img.onload = () => { overlayCache[id] = img; loadNext(); };
+    img.onerror = () => { loadNext(); }; // skip missing overlays silently
+    img.src = `overlays/photo_${id}.jpg?v=1`;
+  }
+  // Start 3 parallel loaders for speed
+  loadNext(); loadNext(); loadNext();
+}
+
 // ── Warm camera on shoot start ──
 async function warmCamera() {
   if (stream) return;
@@ -807,10 +828,20 @@ function updateCameraUI(idx) {
   backBtn.style.opacity = idx === 0 ? '0.25' : '1';
   backBtn.disabled = idx === 0;
   const overlay = document.getElementById('overlay-img');
-  overlay.style.display = 'none';
-  overlay.onload = () => { overlay.style.display = 'block'; };
-  overlay.onerror = () => { overlay.style.display = 'none'; };
-  overlay.src = ''; overlay.src = `overlays/photo_${shot.id}.jpg?v=1`;
+  if (overlayCache[shot.id]) {
+    // Already preloaded — swap src instantly
+    overlay.src = overlayCache[shot.id].src;
+    overlay.style.display = 'block';
+  } else {
+    // Not yet cached — load normally and cache on arrival
+    overlay.style.display = 'none';
+    overlay.onload = () => {
+      overlay.style.display = 'block';
+      if (!overlayCache[shot.id]) overlayCache[shot.id] = { src: overlay.src };
+    };
+    overlay.onerror = () => { overlay.style.display = 'none'; };
+    overlay.src = ''; overlay.src = `overlays/photo_${shot.id}.jpg?v=1`;
+  }
   document.getElementById('progress-fill').style.width = (idx / SHOTS.length * 100) + '%';
 }
 
@@ -1373,7 +1404,7 @@ document.getElementById('btn-finish-delete').addEventListener('click', () => {
   if (!ok) return;
   currentIdx=0; capturedCount=0; skippedCount=0; previousPosition=null;
   capturedBlob=null; shotData={}; uploadQueue={}; currentLens=-1; cameraMap={};
-  skippedShots=new Set(); reviewingFromList=false; activeUploads=0;
+  skippedShots=new Set(); reviewingFromList=false; activeUploads=0; overlayCache={};
   if (retryTimer) clearInterval(retryTimer);
   document.getElementById('progress-fill').style.width = '0%';
   document.getElementById('reg-number').value = '';
