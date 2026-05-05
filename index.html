@@ -360,7 +360,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.4</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.6</div>
 </div>
 
 <!-- SETTINGS -->
@@ -461,6 +461,7 @@
     <div class="cam-error-text">Settings → Safari → Camera → Allow</div>
   </div>
 
+
 </div>
 
 <!-- RETAKE / REVIEW -->
@@ -522,7 +523,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.4
+// SNAP IT v7.6
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -772,20 +773,9 @@ function updateCameraUI(idx) {
 async function buildCameraMap() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   const videoDevices = devices.filter(d => d.kind === 'videoinput');
-  console.log('All cameras:', videoDevices.map(d => d.label));
   cameraMap = {};
 
-  // iOS Safari labels rear cameras as:
-  //   "Back Ultra Wide Camera"  → 0.5x
-  //   "Back Camera"             → 1.0x (main/wide)
-  //   "Back Dual Wide Camera"   → 1.0x (some models)
-  //   "Back Telephoto Camera"   → 2.0x or 3.0x
-  //   "Back Triple Camera"      → multi-lens system, treat as 1.0x
-  // Some models also prefix with magnification e.g. "0.5x Back Ultra Wide..."
-  // We handle both patterns.
-
-  // Filter to physical rear cameras only — exclude virtual/fused cameras
-  // (Triple, Dual Wide, Dual are software constructs blending multiple lenses)
+  // Exclude virtual/fused cameras — these blend multiple lenses in software
   const VIRTUAL = ['triple', 'dual wide', 'dual camera'];
   const rearCameras = videoDevices.filter(d => {
     const l = d.label.toLowerCase();
@@ -795,57 +785,86 @@ async function buildCameraMap() {
     return true;
   });
 
-  // Map physical lenses by exact iOS label:
-  // "Back Ultra Wide Camera" → 0.5x
-  // "Back Camera"            → 1.0x (main wide, 24mm)
-  // "Back Telephoto Camera"  → 2.0x
-  // Prefix pattern e.g. "0.5x Back..." also handled
+  // Step 1: assign ultra-wide and main from known labels
+  let telephotoId = null;
   for (const d of rearCameras) {
     const l = d.label.toLowerCase();
-
-    // Prefix pattern first (some browsers expose this)
     const prefixMatch = l.match(/^([\d.]+)x\s/);
     if (prefixMatch) {
       const mag = parseFloat(prefixMatch[1]);
       if (!cameraMap[mag]) cameraMap[mag] = d.deviceId;
       continue;
     }
-
     if (l.includes('ultra wide') || l.includes('ultrawide')) {
       if (!cameraMap[0.5]) cameraMap[0.5] = d.deviceId;
     } else if (l.includes('telephoto')) {
-      if (!cameraMap[2.0]) cameraMap[2.0] = d.deviceId;
+      telephotoId = d.deviceId; // probe below
     } else if (l.includes('back camera')) {
       if (!cameraMap[1.0]) cameraMap[1.0] = d.deviceId;
     }
   }
 
-  // Fallback — if nothing matched, assign positionally
-  if (Object.keys(cameraMap).length === 0 && rearCameras.length > 0) {
-    cameraMap[1.0] = rearCameras[0].deviceId;
-    if (rearCameras.length >= 2) cameraMap[0.5] = rearCameras[1].deviceId;
-    if (rearCameras.length >= 3) cameraMap[2.0] = rearCameras[2].deviceId;
+  // Step 2: probe telephoto to determine its actual zoom level
+  if (telephotoId) {
+    let detectedZoom = null;
+    try {
+      const probe = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: telephotoId } }, audio: false
+      });
+      const track = probe.getVideoTracks()[0];
+      const settings = track.getSettings ? track.getSettings() : {};
+      probe.getTracks().forEach(t => t.stop());
+      detectedZoom = settings.zoom || null;
+      console.log('Telephoto getSettings zoom:', detectedZoom);
+    } catch(e) {
+      console.warn('Telephoto probe failed:', e.message);
+    }
+
+    if (detectedZoom !== null) {
+      // Use the detected zoom value directly
+      const mapped = detectedZoom <= 2.2 ? 2.0 : Math.round(detectedZoom);
+      cameraMap[mapped] = telephotoId;
+      console.log(`Telephoto probed at ${detectedZoom}x → mapped to ${mapped}x`);
+    } else {
+      // Can't detect — open it briefly and compare focal length heuristic
+      // Default: assume it's the longer telephoto (3x) on modern Pro devices
+      cameraMap[3.0] = telephotoId;
+      console.log('Telephoto zoom unknown — defaulting to 3x slot');
+    }
   }
 
-  // Fill missing slots with closest physical lens available
-  for (const slot of [0.5, 1.0, 2.0]) {
+  // Step 3: if no physical 2x exists, create a virtual one from main sensor
+  if (!cameraMap[2.0] && cameraMap[1.0]) {
+    cameraMap[2.0] = { deviceId: cameraMap[1.0], virtualZoom: 2.0 };
+    console.log('No physical 2x — using main sensor with 2x zoom constraint');
+  }
+
+  // Step 4: fill 0.5 and 1.0 if still missing
+  for (const slot of [0.5, 1.0]) {
     if (!cameraMap[slot] && Object.keys(cameraMap).length > 0) {
       cameraMap[slot] = findClosestDeviceId(slot);
     }
   }
 
   console.log('Physical cameras:', rearCameras.map(d => d.label));
-  console.log('Camera map:', cameraMap);
+  console.log('Camera map:', Object.fromEntries(
+    Object.entries(cameraMap).map(([k,v]) => [
+      k, typeof v === 'object' ? `main+zoom${v.virtualZoom}x` : v.slice(0,10)
+    ])
+  ));
 }
 
 function findClosestDeviceId(requested) {
-  const avail = Object.keys(cameraMap).map(Number).sort((a,b) => a-b);
+  const avail = Object.keys(cameraMap).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
   if (!avail.length) return null;
-  return cameraMap[avail.reduce((p,c) => Math.abs(c-requested) < Math.abs(p-requested) ? c : p)];
+  const closest = avail.reduce((p,c) => Math.abs(c-requested) < Math.abs(p-requested) ? c : p);
+  const entry = cameraMap[closest];
+  // Return deviceId string whether entry is plain string or virtualZoom object
+  return typeof entry === 'object' ? entry.deviceId : entry;
 }
 
 function findClosestLens(requested) {
-  const avail = Object.keys(cameraMap).map(Number).sort((a,b) => a-b);
+  const avail = Object.keys(cameraMap).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
   if (!avail.length) return null;
   return avail.reduce((p,c) => Math.abs(c-requested) < Math.abs(p-requested) ? c : p);
 }
@@ -860,12 +879,32 @@ async function startCamera(requestedLens = 1.0) {
       await buildCameraMap();
     }
     const cl = findClosestLens(requestedLens);
-    const deviceId = cl !== null ? cameraMap[cl] : null;
-    currentLens = cl || requestedLens;
-    const constraints = deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } }
-      : { facingMode: { exact: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
+    const lensEntry = cl !== null ? cameraMap[cl] : null;
+    currentLens = requestedLens;
+
+    // lensEntry may be a deviceId string or a { deviceId, virtualZoom } object
+    const isVirtual = lensEntry && typeof lensEntry === 'object' && lensEntry.virtualZoom;
+    const deviceId = isVirtual ? lensEntry.deviceId : lensEntry;
+    const virtualZoom = isVirtual ? lensEntry.virtualZoom : null;
+
+    let constraints;
+    if (deviceId) {
+      constraints = { deviceId: { exact: deviceId }, width: { ideal: 4032 }, height: { ideal: 3024 } };
+    } else {
+      constraints = { facingMode: { exact: 'environment' }, width: { ideal: 4032 }, height: { ideal: 3024 } };
+    }
     stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
+
+    // Apply virtual zoom if needed (2x crop of main sensor)
+    if (virtualZoom) {
+      try {
+        const track = stream.getVideoTracks()[0];
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.zoom) {
+          await track.applyConstraints({ advanced: [{ zoom: virtualZoom }] });
+        }
+      } catch(e) { /* zoom not supported — falls back to 1x view */ }
+    }
     const video = document.getElementById('camera-video');
     video.srcObject = stream; video.muted = true;
     await video.play().catch(() => {});
