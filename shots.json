@@ -157,7 +157,7 @@
     "description": "Shoot the driver-side front wheel straight on. Alloy fills the frame, tyre lettering visible.",
     "position": "B",
     "mandatory": true,
-    "lens": 1.0
+    "lens": 2.0
   },
   {
     "id": 21,
@@ -165,7 +165,7 @@
     "description": "Shoot the driver-side rear wheel straight on. Alloy fills the frame, tyre lettering visible.",
     "position": "B",
     "mandatory": true,
-    "lens": 1.0
+    "lens": 2.0
   },
   {
     "id": 22,
@@ -173,7 +173,7 @@
     "description": "Shoot the passenger-side rear wheel straight on. Alloy fills the frame, tyre lettering visible.",
     "position": "B",
     "mandatory": true,
-    "lens": 1.0
+    "lens": 2.0
   },
   {
     "id": 23,
@@ -181,7 +181,7 @@
     "description": "Shoot the passenger-side front wheel straight on. Alloy fills the frame, tyre lettering visible.",
     "position": "B",
     "mandatory": true,
-    "lens": 1.0
+    "lens": 2.0
   },
   {
     "id": 24,
