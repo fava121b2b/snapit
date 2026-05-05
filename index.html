@@ -406,7 +406,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.1</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.2</div>
 </div>
 
 <!-- SETTINGS -->
@@ -577,7 +577,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.1
+// SNAP IT v8.2
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -764,8 +764,20 @@ function showPositionScreen(pos, nextIdx) {
   document.getElementById('btn-pos-ready').onclick = () => {
     previousPosition = pos;
     currentPositionForRotate = null;
-    showScreen('list');
-    refreshList();
+    // Go straight to camera for the next shot
+    const shot = SHOTS[currentIdx];
+    if (shot) {
+      const requestedLens = shot.lens || 1.0;
+      updateLensButtons(requestedLens);
+      showScreen('camera');
+      if (requestedLens !== currentLens || !stream) {
+        currentLens = requestedLens;
+        startCamera(requestedLens);
+      }
+    } else {
+      showScreen('list');
+      refreshList();
+    }
   };
   showScreen('position');
 }
