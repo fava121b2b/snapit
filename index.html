@@ -341,8 +341,15 @@
   .upload-progress-bar-track { width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
   .upload-progress-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; width:0%; }
   .upload-progress-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; }
-  .btn-back-to-list { background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:100px; font-family:'Syne',sans-serif; font-size:14px; font-weight:600; padding:12px 24px; cursor:pointer; }
-  .btn-back-to-list:active { color:var(--white); border-color:var(--white); }
+  .btn-back-to-list {
+    position:absolute;
+    top:calc(var(--safe-top) + 14px);
+    left:calc(var(--safe-left) + 20px);
+    background:transparent; border:none;
+    color:var(--muted); font-family:'DM Sans',sans-serif;
+    font-size:15px; cursor:pointer; padding:0; z-index:10;
+  }
+  .btn-back-to-list:active { color:var(--white); }
   .btn-finish-delete { background:transparent; border:1.5px solid rgba(255,71,87,0.5); color:var(--red); border-radius:100px; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; padding:16px 36px; cursor:pointer; }
   .btn-finish-delete:active { background:var(--red-dim); }
   .btn-finish-delete-warning { font-size:11px; color:var(--muted); margin-top:8px; max-width:280px; line-height:1.4; }
@@ -397,7 +404,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.6</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.7</div>
 </div>
 
 <!-- SETTINGS -->
@@ -552,8 +559,9 @@
     </div>
   </div>
 
+  <button class="btn-back-to-list" id="btn-back-to-list">← Back to List</button>
+
   <div class="complete-btns">
-    <button class="btn-back-to-list" id="btn-back-to-list">← Back to List</button>
     <button class="btn-complete-save" id="btn-complete-save" title="Save to Device">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 16V4M8 8l4-4 4 4"/><path d="M20 16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/>
@@ -568,7 +576,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.6
+// SNAP IT v8.7
 // ══════════════════════════════════════════
 
 let SHOTS = [];
