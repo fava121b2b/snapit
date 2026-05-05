@@ -404,7 +404,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.7</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v8.8</div>
 </div>
 
 <!-- SETTINGS -->
@@ -576,7 +576,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v8.7
+// SNAP IT v8.8
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -814,21 +814,26 @@ function ensureCamera() {
 
 // ── Preload overlay images ──
 function preloadOverlays() {
-  // Load all overlay images into memory in the background
-  // Priority: load current shot first, then surrounding shots, then rest
+  // Build load order: current shot first, then forward, then wrap around
   const ids = SHOTS.map(s => s.id);
+  const startIdx = Math.max(0, currentIdx);
+  const ordered = [...ids.slice(startIdx), ...ids.slice(0, startIdx)];
+
   let i = 0;
   function loadNext() {
-    if (i >= ids.length) return;
-    const id = ids[i++];
-    if (overlayCache[id]) { loadNext(); return; }
+    if (i >= ordered.length) return;
+    const id = ordered[i++];
+    if (overlayCache[id] && overlayCache[id].complete) { loadNext(); return; }
     const img = new Image();
-    img.onload = () => { overlayCache[id] = img; loadNext(); };
-    img.onerror = () => { loadNext(); }; // skip missing overlays silently
+    img.onload = () => {
+      overlayCache[id] = img;
+      loadNext();
+    };
+    img.onerror = () => { overlayCache[id] = null; loadNext(); };
     img.src = `overlays/photo_${id}.jpg?v=1`;
   }
-  // Start 3 parallel loaders for speed
-  loadNext(); loadNext(); loadNext();
+  // 4 parallel loaders
+  loadNext(); loadNext(); loadNext(); loadNext();
 }
 
 // ── Warm camera on shoot start ──
@@ -867,19 +872,38 @@ function updateCameraUI(idx) {
   backBtn.style.opacity = idx === 0 ? '0.25' : '1';
   backBtn.disabled = idx === 0;
   const overlay = document.getElementById('overlay-img');
-  if (overlayCache[shot.id]) {
-    // Already preloaded — swap src instantly
-    overlay.src = overlayCache[shot.id].src;
+  const cached = overlayCache[shot.id];
+
+  if (cached && cached.complete && cached.naturalWidth > 0) {
+    // Fully loaded in cache — use object URL or src directly
+    overlay.onload = null; overlay.onerror = null;
+    overlay.src = cached.src;
     overlay.style.display = 'block';
-  } else {
-    // Not yet cached — load normally and cache on arrival
+  } else if (cached === null) {
+    // Known missing overlay
     overlay.style.display = 'none';
+  } else {
+    // Not cached yet — load and show when ready
+    overlay.style.display = 'none';
+    const targetId = shot.id;
+    const newSrc = `overlays/photo_${targetId}.jpg?v=1`;
+
+    // Avoid race: only apply if still on this shot when load fires
     overlay.onload = () => {
-      overlay.style.display = 'block';
-      if (!overlayCache[shot.id]) overlayCache[shot.id] = { src: overlay.src };
+      if (SHOTS[currentIdx] && SHOTS[currentIdx].id === targetId) {
+        overlay.style.display = 'block';
+      }
+      if (!overlayCache[targetId]) overlayCache[targetId] = overlay;
     };
-    overlay.onerror = () => { overlay.style.display = 'none'; };
-    overlay.src = ''; overlay.src = `overlays/photo_${shot.id}.jpg?v=1`;
+    overlay.onerror = () => {
+      overlayCache[targetId] = null;
+      overlay.style.display = 'none';
+    };
+
+    // Only update src if it actually changed — avoids unnecessary reloads
+    if (overlay.src !== newSrc && !overlay.src.endsWith(newSrc)) {
+      overlay.src = newSrc;
+    }
   }
   document.getElementById('progress-fill').style.width = (idx / SHOTS.length * 100) + '%';
 }
