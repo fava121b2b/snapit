@@ -360,7 +360,7 @@
   </div>
   <button class="btn-start" id="btn-start">Start Shoot</button>
   <button class="btn-settings" id="btn-settings">⚙ Settings</button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.3d</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom)+16px);font-size:11px;color:var(--muted);letter-spacing:1px;font-family:'DM Sans',sans-serif;">v7.4</div>
 </div>
 
 <!-- SETTINGS -->
@@ -460,8 +460,7 @@
     <div class="cam-error-title">Camera Access Needed</div>
     <div class="cam-error-text">Settings → Safari → Camera → Allow</div>
   </div>
-  <!-- Temp debug panel — remove after lens mapping confirmed -->
-  <div id="cam-debug" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#e8ff47;font-size:10px;padding:10px 14px;border-radius:10px;z-index:50;max-width:90vw;word-break:break-all;white-space:pre-wrap;font-family:monospace;line-height:1.5;display:none;"></div>
+
 </div>
 
 <!-- RETAKE / REVIEW -->
@@ -523,7 +522,7 @@
 
 <script>
 // ══════════════════════════════════════════
-// SNAP IT v7.3d
+// SNAP IT v7.4
 // ══════════════════════════════════════════
 
 let SHOTS = [];
@@ -785,65 +784,58 @@ async function buildCameraMap() {
   // Some models also prefix with magnification e.g. "0.5x Back Ultra Wide..."
   // We handle both patterns.
 
+  // Filter to physical rear cameras only — exclude virtual/fused cameras
+  // (Triple, Dual Wide, Dual are software constructs blending multiple lenses)
+  const VIRTUAL = ['triple', 'dual wide', 'dual camera'];
   const rearCameras = videoDevices.filter(d => {
     const l = d.label.toLowerCase();
-    return !l.includes('front') && !l.includes('selfie') &&
-           !l.includes('facetime') && !l.includes('user');
+    if (l.includes('front') || l.includes('selfie') ||
+        l.includes('facetime') || l.includes('user')) return false;
+    if (VIRTUAL.some(v => l.includes(v))) return false;
+    return true;
   });
 
+  // Map physical lenses by exact iOS label:
+  // "Back Ultra Wide Camera" → 0.5x
+  // "Back Camera"            → 1.0x (main wide, 24mm)
+  // "Back Telephoto Camera"  → 2.0x
+  // Prefix pattern e.g. "0.5x Back..." also handled
   for (const d of rearCameras) {
     const l = d.label.toLowerCase();
 
-    // Pattern 1: label starts with magnification prefix (some browsers/devices)
-    const prefixMatch = l.match(/^(\d+(?:\.\d+)?)x\s/);
+    // Prefix pattern first (some browsers expose this)
+    const prefixMatch = l.match(/^([\d.]+)x\s/);
     if (prefixMatch) {
       const mag = parseFloat(prefixMatch[1]);
       if (!cameraMap[mag]) cameraMap[mag] = d.deviceId;
       continue;
     }
 
-    // Pattern 2: iOS descriptive names
     if (l.includes('ultra wide') || l.includes('ultrawide')) {
       if (!cameraMap[0.5]) cameraMap[0.5] = d.deviceId;
     } else if (l.includes('telephoto')) {
-      // Could be 2x or 3x — store under 2.0 for now, user can override
       if (!cameraMap[2.0]) cameraMap[2.0] = d.deviceId;
-    } else if (l.includes('back camera') || l.includes('back wide') ||
-               l.includes('dual wide') || l.includes('triple') ||
-               l.includes('back') ) {
-      // Default rear camera = 1x
+    } else if (l.includes('back camera')) {
       if (!cameraMap[1.0]) cameraMap[1.0] = d.deviceId;
     }
   }
 
-  // If we got nothing useful, fall back to ordering:
-  // first rear camera = 1x, last = telephoto if multiple
+  // Fallback — if nothing matched, assign positionally
   if (Object.keys(cameraMap).length === 0 && rearCameras.length > 0) {
     cameraMap[1.0] = rearCameras[0].deviceId;
     if (rearCameras.length >= 2) cameraMap[0.5] = rearCameras[1].deviceId;
     if (rearCameras.length >= 3) cameraMap[2.0] = rearCameras[2].deviceId;
   }
 
-  // Fill any missing slots with closest available
-  const slots = [0.5, 1.0, 2.0];
-  for (const slot of slots) {
+  // Fill missing slots with closest physical lens available
+  for (const slot of [0.5, 1.0, 2.0]) {
     if (!cameraMap[slot] && Object.keys(cameraMap).length > 0) {
       cameraMap[slot] = findClosestDeviceId(slot);
     }
   }
 
-  console.log('Camera map result:', cameraMap);
-  console.log('Rear cameras found:', rearCameras.map(d => `${d.label} → ${d.deviceId.slice(0,8)}`));
-
-  // Show debug panel on screen
-  const dbg = document.getElementById('cam-debug');
-  if (dbg) {
-    dbg.style.display = 'block';
-    dbg.textContent = 'CAMERAS FOUND:\n' +
-      rearCameras.map(d => d.label || '(no label)').join('\n') +
-      '\n\nMAP:\n' +
-      Object.entries(cameraMap).map(([k,v]) => `${k}x → ${v.slice(0,12)}`).join('\n');
-  }
+  console.log('Physical cameras:', rearCameras.map(d => d.label));
+  console.log('Camera map:', cameraMap);
 }
 
 function findClosestDeviceId(requested) {
